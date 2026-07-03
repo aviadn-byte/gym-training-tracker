@@ -147,7 +147,12 @@ export const he = {
     volume: 'נפח',
     e1rm: '1RM משוער',
     relativeStrength: 'כוח יחסי',
-    addWeight: 'הוסף שקילה'
+    addWeight: 'הוסף שקילה',
+    sessionDetails: 'פרטי אימון',
+    editSession: 'עריכת סשן',
+    noHistory: 'אין עדיין אימונים שהושלמו',
+    trend: 'מגמה',
+    recommendedRange: 'טווח מומלץ'
   },
   settings: {
     title: 'הגדרות',
@@ -158,7 +163,12 @@ export const he = {
     unmatched: 'תרגילים שלא זוהו',
     disclaimer: 'דיסקליימר',
     pwa: 'אפליקציה אופליין',
-    barWeight: 'משקל מוט ברירת מחדל'
+    barWeight: 'משקל מוט ברירת מחדל',
+    backupReady: 'הגיבוי ירד למכשיר',
+    restoreDone: 'השחזור הושלם',
+    importDone: 'הייבוא הושלם',
+    chooseMapping: 'בחר מיפוי',
+    importMapped: 'ייבא עם המיפוי'
   },
   alerts: {
     stagnation: 'מגמת התקדמות נעצרה',
