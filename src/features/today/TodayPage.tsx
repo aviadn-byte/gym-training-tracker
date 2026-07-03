@@ -1,6 +1,6 @@
 import { AlertTriangle, Flame, Play, TrendingUp } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Stat } from '../../components/ui/Stat';
@@ -17,6 +17,7 @@ import {
 import { he } from '../../i18n/he';
 
 export function TodayPage() {
+  const navigate = useNavigate();
   const activeSession = useLiveQuery(
     () => db.workoutSessions.where('status').equals('active').first(),
     []
@@ -83,11 +84,11 @@ export function TodayPage() {
 
   const startWorkout = async () => {
     if (activeSession) {
-      window.location.href = '/workout';
+      navigate('/workout');
       return;
     }
     if (!firstProgram || !firstDay) {
-      window.location.href = '/programs';
+      navigate('/programs');
       return;
     }
     await db.workoutSessions.put({
@@ -103,7 +104,7 @@ export function TodayPage() {
       addedExercises: [],
       skippedExerciseIds: []
     });
-    window.location.href = '/workout';
+    navigate('/workout');
   };
 
   return (

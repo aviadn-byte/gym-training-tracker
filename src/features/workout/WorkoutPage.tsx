@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
@@ -52,6 +53,7 @@ const setTypeOptions: Array<{ value: SetType; label: string }> = [
 ];
 
 export function WorkoutPage() {
+  const navigate = useNavigate();
   const pushToast = useToastStore((state) => state.pushToast);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [draft, setDraft] = useState<SetDraft>({
@@ -277,7 +279,7 @@ export function WorkoutPage() {
             <Dumbbell size={30} strokeWidth={1.5} className="text-volt" />
           </div>
           <h3 className="text-xl font-extrabold">{he.workout.activeTitle}</h3>
-          <Button className="mt-5 w-full" onClick={() => (window.location.href = '/programs')}>
+          <Button className="mt-5 w-full" onClick={() => navigate('/programs')}>
             {he.today.startWorkout}
           </Button>
         </Card>
