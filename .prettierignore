@@ -1,9 +1,9 @@
 node_modules/
 dist/
+dev-dist/
 coverage/
 *.tsbuildinfo
 AGENTS.md
 CLAUDE.md
 אפיון-אפליקציית-אימונים.md
 סקירת-אפיון-שלוש-נקודות-מבט.md
-

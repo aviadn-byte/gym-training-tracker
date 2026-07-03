@@ -17,7 +17,7 @@ const tabs = [
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
+    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col pb-[calc(10.5rem+env(safe-area-inset-bottom))]">
       <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-ink/82 px-5 pb-3 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4">
           <div>
