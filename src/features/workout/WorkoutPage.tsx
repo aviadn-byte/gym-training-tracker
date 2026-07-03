@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Dumbbell,
+  Info,
   Plus,
   Save,
   Shuffle,
@@ -18,6 +19,7 @@ import { NumberStepper } from '../../components/ui/NumberStepper';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { Stat } from '../../components/ui/Stat';
 import { Confetti } from '../../components/Confetti';
+import { ExerciseGuide } from '../../components/ExerciseGuide';
 import { PlateCalculator } from '../../components/PlateCalculator';
 import { RestTimer } from '../../components/RestTimer';
 import { db, createId, nowIso } from '../../db/schema';
@@ -66,6 +68,7 @@ export function WorkoutPage() {
   const [restStartedAt, setRestStartedAt] = useState<number | null>(null);
   const [restTotalSeconds, setRestTotalSeconds] = useState(120);
   const [plateOpen, setPlateOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [addExerciseOpen, setAddExerciseOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [editingSet, setEditingSet] = useState<LoggedSet | null>(null);
@@ -328,6 +331,14 @@ export function WorkoutPage() {
         <div className="flex gap-2">
           <button
             type="button"
+            className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.06] text-volt"
+            onClick={() => setGuideOpen(true)}
+            aria-label={he.exercises.explanation}
+          >
+            <Info size={21} strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
             className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.06]"
             onClick={() => setExerciseIndex((index) => Math.max(0, index - 1))}
             aria-label="הקודם"
@@ -498,6 +509,9 @@ export function WorkoutPage() {
           onTargetChange={(weightKg) => setDraft((current) => ({ ...current, weightKg }))}
           onBarChange={(barWeightKg) => db.preferences.update('prefs', { barWeightKg })}
         />
+      </Modal>
+      <Modal open={guideOpen} title={exercise.nameHe} onClose={() => setGuideOpen(false)}>
+        <ExerciseGuide exercise={exercise} />
       </Modal>
       <AddExerciseDuringWorkoutModal
         open={addExerciseOpen}

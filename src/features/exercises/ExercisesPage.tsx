@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { ExerciseGuide } from '../../components/ExerciseGuide';
 import { Modal } from '../../components/ui/Modal';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { db, createId, nowIso } from '../../db/schema';
@@ -187,6 +188,7 @@ function ExerciseDetailsModal({ exercise, onClose, onSave }: ExerciseDetailsModa
         <p className="text-sm text-muted" dir="ltr">
           {exercise.nameEn}
         </p>
+        <ExerciseGuide exercise={exercise} />
         <label className="block">
           <span className="mb-2 block text-xs font-semibold text-muted">{he.exercises.notes}</span>
           <textarea
