@@ -34,9 +34,17 @@ export function ExercisesPage() {
   const saveExerciseDetails = async (
     exercise: Exercise,
     notes: string,
-    weightIncrementKg: 1 | 2 | 2.5 | 5
+    weightIncrementKg: 1 | 2 | 2.5 | 5,
+    machineName: string,
+    machineSettings: string
   ) => {
-    await db.exercises.update(exercise.id, { notes, weightIncrementKg, updatedAt: nowIso() });
+    await db.exercises.update(exercise.id, {
+      notes,
+      weightIncrementKg,
+      machineName: machineName.trim(),
+      machineSettings: machineSettings.trim(),
+      updatedAt: nowIso()
+    });
     setEditing(null);
   };
 
@@ -53,6 +61,8 @@ export function ExercisesPage() {
       primaryMuscles: [draft.primary],
       secondaryMuscles: [],
       equipment: draft.equipment,
+      machineName: '',
+      machineSettings: '',
       isCustom: true,
       notes: '',
       weightIncrementKg: 2.5,
@@ -137,9 +147,20 @@ export function ExercisesPage() {
                 </span>
                 <span className="h-1 w-1 rounded-full bg-white/20" />
                 <span>{he.equipment[exercise.equipment]}</span>
+                {exercise.machineName ? (
+                  <>
+                    <span className="h-1 w-1 rounded-full bg-white/20" />
+                    <span>{exercise.machineName}</span>
+                  </>
+                ) : null}
                 <span className="h-1 w-1 rounded-full bg-white/20" />
                 <span>{exercise.isCustom ? he.exercises.custom : he.exercises.builtIn}</span>
               </div>
+              {exercise.machineSettings ? (
+                <p className="mt-3 rounded-2xl border border-volt/15 bg-volt/10 p-3 text-sm leading-6 text-volt">
+                  {exercise.machineSettings}
+                </p>
+              ) : null}
               {exercise.notes ? (
                 <p className="mt-3 rounded-2xl bg-white/[0.04] p-3 text-sm leading-6 text-white/70">
                   {exercise.notes}
@@ -166,16 +187,26 @@ export function ExercisesPage() {
 interface ExerciseDetailsModalProps {
   exercise: Exercise | null;
   onClose: () => void;
-  onSave: (exercise: Exercise, notes: string, weightIncrementKg: 1 | 2 | 2.5 | 5) => void;
+  onSave: (
+    exercise: Exercise,
+    notes: string,
+    weightIncrementKg: 1 | 2 | 2.5 | 5,
+    machineName: string,
+    machineSettings: string
+  ) => void;
 }
 
 function ExerciseDetailsModal({ exercise, onClose, onSave }: ExerciseDetailsModalProps) {
   const [notes, setNotes] = useState('');
+  const [machineName, setMachineName] = useState('');
+  const [machineSettings, setMachineSettings] = useState('');
   const [increment, setIncrement] = useState<1 | 2 | 2.5 | 5>(2.5);
 
   useEffect(() => {
     if (exercise) {
       setNotes(exercise.notes);
+      setMachineName(exercise.machineName ?? '');
+      setMachineSettings(exercise.machineSettings ?? '');
       setIncrement(exercise.weightIncrementKg);
     }
   }, [exercise]);
@@ -189,6 +220,24 @@ function ExerciseDetailsModal({ exercise, onClose, onSave }: ExerciseDetailsModa
           {exercise.nameEn}
         </p>
         <ExerciseGuide exercise={exercise} />
+        <TextInput
+          label={he.exercises.machineName}
+          value={machineName}
+          onChange={setMachineName}
+          placeholder={he.exercises.machineNamePlaceholder}
+        />
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold text-muted">
+            {he.exercises.machineSettings}
+          </span>
+          <textarea
+            value={machineSettings}
+            onChange={(event) => setMachineSettings(event.target.value)}
+            rows={3}
+            placeholder={he.exercises.machineSettingsPlaceholder}
+            className="w-full resize-none rounded-2xl border border-white/[0.08] bg-white/[0.05] p-4 text-white outline-none focus:border-volt/40"
+          />
+        </label>
         <label className="block">
           <span className="mb-2 block text-xs font-semibold text-muted">{he.exercises.notes}</span>
           <textarea
@@ -207,7 +256,10 @@ function ExerciseDetailsModal({ exercise, onClose, onSave }: ExerciseDetailsModa
           }))}
           onChange={(value) => setIncrement(Number(value) as 1 | 2 | 2.5 | 5)}
         />
-        <Button className="w-full" onClick={() => onSave(exercise, notes, increment)}>
+        <Button
+          className="w-full"
+          onClick={() => onSave(exercise, notes, increment, machineName, machineSettings)}
+        >
           {he.exercises.saveDetails}
         </Button>
       </div>
@@ -288,17 +340,19 @@ interface TextInputProps {
   value: string;
   onChange: (value: string) => void;
   dir?: 'rtl' | 'ltr';
+  placeholder?: string;
 }
 
-function TextInput({ label, value, onChange, dir = 'rtl' }: TextInputProps) {
+function TextInput({ label, value, onChange, dir = 'rtl', placeholder }: TextInputProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-semibold text-muted">{label}</span>
       <input
         value={value}
         dir={dir}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 w-full rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 text-white outline-none focus:border-volt/40"
+        className="min-h-12 w-full rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 text-white outline-none placeholder:text-white/35 focus:border-volt/40"
       />
     </label>
   );

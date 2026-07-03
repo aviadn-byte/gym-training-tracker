@@ -1,6 +1,7 @@
 import type {
   AppPreferences,
   BodyWeightEntry,
+  CardioEntry,
   Exercise,
   ISODateString,
   MuscleGroup,
@@ -26,6 +27,7 @@ export interface AiExportSource {
   workoutDays: WorkoutDay[];
   workoutSessions: WorkoutSession[];
   bodyWeightEntries: BodyWeightEntry[];
+  cardioEntries: CardioEntry[];
   preferences: AppPreferences[];
 }
 
@@ -57,12 +59,16 @@ export interface AiAnalysisExport {
     firstSessionAt: ISODateString | null;
     lastSessionAt: ISODateString | null;
     latestBodyWeightKg: number | null;
+    cardioSessions: number;
+    totalCardioMinutes: number;
+    totalCardioDistanceKm: number;
   };
   exercises: Exercise[];
   programs: Program[];
   workoutDays: WorkoutDay[];
   workoutSessions: WorkoutSession[];
   bodyWeightEntries: BodyWeightEntry[];
+  cardioEntries: CardioEntry[];
   analytics: {
     personalRecords: Array<{
       exerciseId: string;
@@ -161,13 +167,22 @@ export function buildAiAnalysisPackage(
       personalRecords: personalRecords.length,
       firstSessionAt: sortedSessions[0]?.startedAt ?? null,
       lastSessionAt: sortedSessions.at(-1)?.startedAt ?? null,
-      latestBodyWeightKg: sortedBodyWeights.at(-1)?.weightKg ?? null
+      latestBodyWeightKg: sortedBodyWeights.at(-1)?.weightKg ?? null,
+      cardioSessions: source.cardioEntries.length,
+      totalCardioMinutes: round(
+        source.cardioEntries.reduce((sum, entry) => sum + entry.durationMinutes, 0)
+      ),
+      totalCardioDistanceKm: round(
+        source.cardioEntries.reduce((sum, entry) => sum + (entry.distanceKm ?? 0), 0),
+        1
+      )
     },
     exercises: source.exercises,
     programs: source.programs,
     workoutDays: source.workoutDays,
     workoutSessions: source.workoutSessions,
     bodyWeightEntries: source.bodyWeightEntries,
+    cardioEntries: source.cardioEntries,
     analytics: {
       personalRecords,
       exerciseRollups: buildExerciseRollups(source.workoutSessions, source.exercises),
@@ -204,6 +219,7 @@ export function buildAiPrompt(data: AiAnalysisExport) {
 - נפח כולל: ${data.summary.totalVolumeKg} ק״ג
 - שיאים מחושבים: ${data.summary.personalRecords}
 - משקל גוף אחרון: ${data.summary.latestBodyWeightKg ?? 'לא תועד'} ק״ג
+- אירובי: ${data.summary.cardioSessions} סשנים, ${data.summary.totalCardioMinutes} דקות, ${data.summary.totalCardioDistanceKm} ק״מ
 
 נתח עבורי:
 1. סיכום מצב נוכחי בשפה פשוטה.
@@ -212,7 +228,8 @@ export function buildAiPrompt(data: AiAnalysisExport) {
 4. עומסים חריגים, שרירים שמקבלים יותר מדי או פחות מדי נפח.
 5. כאבים או דגלים שמחייבים זהירות.
 6. המלצות לשבועיים הקרובים: עומס, חזרות, מנוחה, וריאציות או דילוד.
-7. שלושה צעדים פרקטיים לאימון הבא.
+7. מצב אירובי והתאמה למטרת האימון.
+8. שלושה צעדים פרקטיים לאימון הבא.
 
 החזר תשובה בעברית, ממוקדת, עם טבלת המלצות בסוף.`;
 }

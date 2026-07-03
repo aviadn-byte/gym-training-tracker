@@ -445,6 +445,16 @@ export function WorkoutPage() {
             {he.workout.suggested}: {suggestion.message}
           </p>
         ) : null}
+        {exercise.machineName || exercise.machineSettings ? (
+          <div className="mt-3 rounded-2xl border border-volt/15 bg-volt/10 p-3">
+            {exercise.machineName ? (
+              <p className="text-sm font-extrabold text-volt">{exercise.machineName}</p>
+            ) : null}
+            {exercise.machineSettings ? (
+              <p className="mt-1 text-sm leading-6 text-white/72">{exercise.machineSettings}</p>
+            ) : null}
+          </div>
+        ) : null}
         {exercise.notes ? (
           <p className="mt-3 rounded-2xl bg-white/[0.04] p-3 text-sm leading-6 text-white/70">
             {exercise.notes}

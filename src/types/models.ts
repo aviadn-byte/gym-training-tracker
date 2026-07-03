@@ -33,6 +33,8 @@ export type ProgramGoal = 'strength' | 'hypertrophy' | 'mixed';
 export type ProgramStatus = 'active' | 'archived';
 export type WorkoutStatus = 'active' | 'completed';
 export type SetType = 'warmup' | 'working' | 'drop' | 'amrap';
+export type CardioModality =
+  'treadmill' | 'bike' | 'elliptical' | 'rower' | 'stairmaster' | 'outdoor' | 'other';
 
 export interface Exercise {
   id: string;
@@ -41,6 +43,8 @@ export interface Exercise {
   primaryMuscles: MuscleGroup[];
   secondaryMuscles: MuscleGroup[];
   equipment: Equipment;
+  machineName?: string;
+  machineSettings?: string;
   isCustom: boolean;
   notes: string;
   weightIncrementKg: 1 | 2 | 2.5 | 5;
@@ -123,6 +127,18 @@ export interface BodyWeightEntry {
   date: ISODateString;
   weightKg: number;
   note?: string;
+}
+
+export interface CardioEntry {
+  id: string;
+  date: ISODateString;
+  modality: CardioModality;
+  durationMinutes: number;
+  distanceKm?: number | null;
+  calories?: number | null;
+  avgHeartRate?: number | null;
+  machineName?: string;
+  notes?: string;
 }
 
 export interface AppPreferences {

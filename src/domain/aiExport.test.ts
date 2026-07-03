@@ -103,6 +103,19 @@ describe('buildAiAnalysisPackage', () => {
             weightKg: 82.5
           }
         ],
+        cardioEntries: [
+          {
+            id: 'cardio_1',
+            date: '2026-01-05T12:00:00.000Z',
+            modality: 'treadmill',
+            durationMinutes: 25,
+            distanceKm: 3.2,
+            calories: 220,
+            avgHeartRate: 132,
+            machineName: 'הליכון 7',
+            notes: 'שיפוע 4'
+          }
+        ],
         preferences: [preferences]
       },
       '2026-01-06T00:00:00.000Z'
@@ -113,6 +126,10 @@ describe('buildAiAnalysisPackage', () => {
     expect(aiPackage.data.summary.totalVolumeKg).toBe(500);
     expect(aiPackage.data.summary.personalRecords).toBe(3);
     expect(aiPackage.data.summary.latestBodyWeightKg).toBe(82.5);
+    expect(aiPackage.data.summary.cardioSessions).toBe(1);
+    expect(aiPackage.data.summary.totalCardioMinutes).toBe(25);
+    expect(aiPackage.data.summary.totalCardioDistanceKm).toBe(3.2);
+    expect(aiPackage.data.cardioEntries[0].machineName).toBe('הליכון 7');
     expect(aiPackage.data.analytics.exerciseRollups[0]).toMatchObject({
       exerciseNameEn: 'Barbell Bench Press',
       totalVolumeKg: 500,

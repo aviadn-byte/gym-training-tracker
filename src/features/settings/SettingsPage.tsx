@@ -40,6 +40,7 @@ export function SettingsPage() {
       workoutDays: await db.workoutDays.toArray(),
       workoutSessions: await db.workoutSessions.toArray(),
       bodyWeightEntries: await db.bodyWeightEntries.toArray(),
+      cardioEntries: await db.cardioEntries.toArray(),
       preferences: await db.preferences.toArray()
     };
     downloadTextFile(
@@ -60,6 +61,7 @@ export function SettingsPage() {
         workoutDays: await db.workoutDays.toArray(),
         workoutSessions: await db.workoutSessions.toArray(),
         bodyWeightEntries: await db.bodyWeightEntries.toArray(),
+        cardioEntries: await db.cardioEntries.toArray(),
         preferences: await db.preferences.toArray()
       },
       exportedAt
@@ -96,6 +98,7 @@ export function SettingsPage() {
       workoutDays?: unknown[];
       workoutSessions?: unknown[];
       bodyWeightEntries?: unknown[];
+      cardioEntries?: unknown[];
       preferences?: unknown[];
     };
     await db.transaction(
@@ -106,6 +109,7 @@ export function SettingsPage() {
         db.workoutDays,
         db.workoutSessions,
         db.bodyWeightEntries,
+        db.cardioEntries,
         db.preferences
       ],
       async () => {
@@ -115,6 +119,7 @@ export function SettingsPage() {
           db.workoutDays.clear(),
           db.workoutSessions.clear(),
           db.bodyWeightEntries.clear(),
+          db.cardioEntries.clear(),
           db.preferences.clear()
         ]);
         await db.exercises.bulkPut((backup.exercises ?? []) as never[]);
@@ -122,6 +127,7 @@ export function SettingsPage() {
         await db.workoutDays.bulkPut((backup.workoutDays ?? []) as never[]);
         await db.workoutSessions.bulkPut((backup.workoutSessions ?? []) as never[]);
         await db.bodyWeightEntries.bulkPut((backup.bodyWeightEntries ?? []) as never[]);
+        await db.cardioEntries.bulkPut((backup.cardioEntries ?? []) as never[]);
         await db.preferences.bulkPut((backup.preferences ?? []) as never[]);
       }
     );

@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type {
   AppPreferences,
   BodyWeightEntry,
+  CardioEntry,
   Exercise,
   Program,
   WorkoutDay,
@@ -14,6 +15,7 @@ export class TrainingDatabase extends Dexie {
   workoutDays!: Table<WorkoutDay, string>;
   workoutSessions!: Table<WorkoutSession, string>;
   bodyWeightEntries!: Table<BodyWeightEntry, string>;
+  cardioEntries!: Table<CardioEntry, string>;
   preferences!: Table<AppPreferences, string>;
 
   constructor() {
@@ -25,6 +27,16 @@ export class TrainingDatabase extends Dexie {
       workoutDays: 'id, programId, order, updatedAt',
       workoutSessions: 'id, status, workoutDayId, programId, startedAt, completedAt',
       bodyWeightEntries: 'id, date',
+      preferences: 'id'
+    });
+
+    this.version(2).stores({
+      exercises: 'id, nameHe, nameEn, equipment, isCustom, updatedAt',
+      programs: 'id, status, goal, updatedAt',
+      workoutDays: 'id, programId, order, updatedAt',
+      workoutSessions: 'id, status, workoutDayId, programId, startedAt, completedAt',
+      bodyWeightEntries: 'id, date',
+      cardioEntries: 'id, date, modality',
       preferences: 'id'
     });
   }

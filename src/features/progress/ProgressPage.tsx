@@ -1,4 +1,4 @@
-import { CalendarDays, Scale, Trash2 } from 'lucide-react';
+import { Activity, CalendarDays, Scale, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
@@ -25,9 +25,16 @@ import {
   derivePersonalRecords
 } from '../../domain/training';
 import { he } from '../../i18n/he';
-import type { BodyWeightEntry, Exercise, LoggedSet, WorkoutSession } from '../../types/models';
+import type {
+  BodyWeightEntry,
+  CardioEntry,
+  CardioModality,
+  Exercise,
+  LoggedSet,
+  WorkoutSession
+} from '../../types/models';
 
-type ProgressTab = 'exercise' | 'volume' | 'prs' | 'weight' | 'history';
+type ProgressTab = 'exercise' | 'volume' | 'prs' | 'weight' | 'cardio' | 'history';
 
 const dateFormatter = new Intl.DateTimeFormat('he-IL', { day: '2-digit', month: '2-digit' });
 
@@ -36,13 +43,33 @@ const tabOptions: Array<{ value: ProgressTab; label: string }> = [
   { value: 'volume', label: he.progress.weeklyVolume },
   { value: 'prs', label: he.progress.prs },
   { value: 'weight', label: he.progress.bodyWeight },
+  { value: 'cardio', label: he.cardio.title },
   { value: 'history', label: he.progress.history }
+];
+
+const cardioOptions: CardioModality[] = [
+  'treadmill',
+  'bike',
+  'elliptical',
+  'rower',
+  'stairmaster',
+  'outdoor',
+  'other'
 ];
 
 export function ProgressPage() {
   const [tab, setTab] = useState<ProgressTab>('exercise');
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [bodyWeight, setBodyWeight] = useState(80);
+  const [cardioDraft, setCardioDraft] = useState({
+    modality: 'treadmill' as CardioModality,
+    durationMinutes: 30,
+    distanceKm: 3,
+    calories: 250,
+    avgHeartRate: 130,
+    machineName: '',
+    notes: ''
+  });
   const [editingSession, setEditingSession] = useState<WorkoutSession | null>(null);
 
   const sessions = useLiveQuery(
@@ -51,6 +78,10 @@ export function ProgressPage() {
   );
   const exercises = useLiveQuery(() => db.exercises.orderBy('nameHe').toArray(), []);
   const bodyWeights = useLiveQuery(() => db.bodyWeightEntries.orderBy('date').toArray(), []);
+  const cardioEntries = useLiveQuery(
+    () => db.cardioEntries.orderBy('date').reverse().toArray(),
+    []
+  );
 
   const exerciseById = useMemo(
     () => new Map((exercises ?? []).map((exercise) => [exercise.id, exercise])),
@@ -123,6 +154,45 @@ export function ProgressPage() {
       weightKg: bodyWeight
     };
     await db.bodyWeightEntries.put(entry);
+  };
+
+  const sortedCardio = useMemo(
+    () => [...(cardioEntries ?? [])].sort((a, b) => a.date.localeCompare(b.date)),
+    [cardioEntries]
+  );
+
+  const cardioChart = useMemo(
+    () =>
+      sortedCardio.slice(-12).map((entry) => ({
+        date: dateFormatter.format(new Date(entry.date)),
+        minutes: entry.durationMinutes,
+        distance: entry.distanceKm ?? 0
+      })),
+    [sortedCardio]
+  );
+
+  const cardioTotals = useMemo(
+    () => ({
+      sessions: sortedCardio.length,
+      minutes: sortedCardio.reduce((sum, entry) => sum + entry.durationMinutes, 0),
+      distance: sortedCardio.reduce((sum, entry) => sum + (entry.distanceKm ?? 0), 0)
+    }),
+    [sortedCardio]
+  );
+
+  const addCardioEntry = async () => {
+    const entry: CardioEntry = {
+      id: createId('cardio'),
+      date: nowIso(),
+      modality: cardioDraft.modality,
+      durationMinutes: cardioDraft.durationMinutes,
+      distanceKm: cardioDraft.distanceKm || null,
+      calories: cardioDraft.calories || null,
+      avgHeartRate: cardioDraft.avgHeartRate || null,
+      machineName: cardioDraft.machineName.trim(),
+      notes: cardioDraft.notes.trim()
+    };
+    await db.cardioEntries.put(entry);
   };
 
   return (
@@ -276,6 +346,187 @@ export function ProgressPage() {
         </div>
       ) : null}
 
+      {tab === 'cardio' ? (
+        <div className="space-y-4">
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-extrabold">{he.cardio.logTitle}</h3>
+                <p className="text-sm text-muted">{he.cardio.logSubtitle}</p>
+              </div>
+              <Activity size={23} strokeWidth={1.5} className="text-volt" />
+            </div>
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold text-muted">
+                {he.cardio.modality}
+              </span>
+              <select
+                value={cardioDraft.modality}
+                onChange={(event) =>
+                  setCardioDraft((current) => ({
+                    ...current,
+                    modality: event.target.value as CardioModality
+                  }))
+                }
+                className="min-h-12 w-full rounded-2xl border border-white/[0.08] bg-[#111116] px-4 text-white outline-none"
+              >
+                {cardioOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {he.cardio.modalities[option]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <NumberStepper
+                label={he.cardio.duration}
+                value={cardioDraft.durationMinutes}
+                min={1}
+                max={240}
+                suffix={he.common.minutes}
+                onChange={(durationMinutes) =>
+                  setCardioDraft((current) => ({ ...current, durationMinutes }))
+                }
+              />
+              <NumberStepper
+                label={he.cardio.distance}
+                value={cardioDraft.distanceKm}
+                min={0}
+                max={100}
+                step={0.1}
+                suffix={he.cardio.km}
+                onChange={(distanceKm) => setCardioDraft((current) => ({ ...current, distanceKm }))}
+              />
+              <NumberStepper
+                label={he.cardio.calories}
+                value={cardioDraft.calories}
+                min={0}
+                max={3000}
+                step={10}
+                onChange={(calories) => setCardioDraft((current) => ({ ...current, calories }))}
+              />
+              <NumberStepper
+                label={he.cardio.avgHeartRate}
+                value={cardioDraft.avgHeartRate}
+                min={0}
+                max={220}
+                suffix={he.cardio.bpm}
+                onChange={(avgHeartRate) =>
+                  setCardioDraft((current) => ({ ...current, avgHeartRate }))
+                }
+              />
+            </div>
+            <TextInput
+              label={he.cardio.machineName}
+              value={cardioDraft.machineName}
+              onChange={(machineName) => setCardioDraft((current) => ({ ...current, machineName }))}
+              placeholder={he.cardio.machineNamePlaceholder}
+            />
+            <TextInput
+              label={he.cardio.notes}
+              value={cardioDraft.notes}
+              onChange={(notes) => setCardioDraft((current) => ({ ...current, notes }))}
+              placeholder={he.cardio.notesPlaceholder}
+            />
+            <Button
+              className="w-full"
+              icon={<Activity size={19} strokeWidth={1.5} />}
+              onClick={addCardioEntry}
+            >
+              {he.cardio.add}
+            </Button>
+          </Card>
+
+          <div className="grid grid-cols-3 gap-2">
+            <Card>
+              <p className="text-xs font-semibold text-muted">{he.cardio.sessions}</p>
+              <p className="ltr-num mt-1 text-2xl font-extrabold text-volt" dir="ltr">
+                {cardioTotals.sessions}
+              </p>
+            </Card>
+            <Card>
+              <p className="text-xs font-semibold text-muted">{he.cardio.totalMinutes}</p>
+              <p className="ltr-num mt-1 text-2xl font-extrabold text-volt" dir="ltr">
+                {cardioTotals.minutes}
+              </p>
+            </Card>
+            <Card>
+              <p className="text-xs font-semibold text-muted">{he.cardio.totalDistance}</p>
+              <p className="ltr-num mt-1 text-2xl font-extrabold text-volt" dir="ltr">
+                {cardioTotals.distance.toFixed(1)}
+              </p>
+            </Card>
+          </div>
+
+          <Card>
+            <h3 className="mb-3 text-xl font-extrabold">{he.cardio.chart}</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={cardioChart}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: 'rgba(255,255,255,0.55)', fontSize: 12 }} />
+                  <YAxis tick={{ fill: 'rgba(255,255,255,0.55)', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#151519',
+                      border: '1px solid rgba(255,255,255,.08)',
+                      borderRadius: 14
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="minutes"
+                    name={he.cardio.duration}
+                    stroke="#C8FF2E"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="distance"
+                    name={he.cardio.distance}
+                    stroke="#FF5A36"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <div className="space-y-3">
+            {(cardioEntries ?? []).map((entry) => (
+              <Card key={entry.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-extrabold">{he.cardio.modalities[entry.modality]}</h3>
+                    <p className="text-xs text-muted">
+                      {dateFormatter.format(new Date(entry.date))} · {entry.durationMinutes}{' '}
+                      {he.common.minutes}
+                      {entry.distanceKm ? ` · ${entry.distanceKm} ${he.cardio.km}` : ''}
+                    </p>
+                    {entry.machineName ? (
+                      <p className="mt-2 text-sm font-semibold text-volt">{entry.machineName}</p>
+                    ) : null}
+                    {entry.notes ? (
+                      <p className="mt-1 text-sm leading-6 text-white/65">{entry.notes}</p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="grid h-10 w-10 place-items-center rounded-xl bg-danger/10 text-danger"
+                    onClick={() => db.cardioEntries.delete(entry.id)}
+                    aria-label={he.common.delete}
+                  >
+                    <Trash2 size={17} strokeWidth={1.5} />
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {tab === 'history' ? (
         <div className="space-y-3">
           {sessions?.length ? (
@@ -322,6 +573,30 @@ export function ProgressPage() {
         }}
       />
     </div>
+  );
+}
+
+function TextInput({
+  label,
+  value,
+  onChange,
+  placeholder
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold text-muted">{label}</span>
+      <input
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-h-12 w-full rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 text-white outline-none placeholder:text-white/35 focus:border-volt/40"
+      />
+    </label>
   );
 }
 
