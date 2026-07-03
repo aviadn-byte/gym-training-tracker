@@ -11,6 +11,7 @@ import { ProgramsPage } from './features/programs/ProgramsPage';
 import { WorkoutPage } from './features/workout/WorkoutPage';
 import { ProgressPage } from './features/progress/ProgressPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { ToastViewport } from './components/ui/ToastViewport';
 
 export function App() {
   const [ready, setReady] = useState(false);
@@ -49,6 +50,7 @@ export function App() {
         </Routes>
       </AppShell>
       <DisclaimerModal open={!preferences?.disclaimerAcceptedAt} onAccept={acceptDisclaimer} />
+      <ToastViewport />
     </>
   );
 }
