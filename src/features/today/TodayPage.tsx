@@ -1,12 +1,18 @@
 import type { ReactNode } from 'react';
 import {
   AlertTriangle,
+  ArrowLeft,
   CalendarCheck2,
+  Dumbbell,
   Flame,
+  Gauge,
+  Home,
   LockKeyhole,
   Play,
+  Scale,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  UserRound
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router-dom';
@@ -25,9 +31,18 @@ import {
 } from '../../domain/training';
 import { selectNextWorkoutDay } from '../../domain/schedule';
 import { he } from '../../i18n/he';
+import type { WorkoutSession } from '../../types/models';
+
+const dateFormatter = new Intl.DateTimeFormat('he-IL', {
+  day: '2-digit',
+  month: 'long'
+});
 
 export function TodayPage() {
   const navigate = useNavigate();
+  const preferences = useLiveQuery(() => db.preferences.get('prefs'), []);
+  const bodyWeights = useLiveQuery(() => db.bodyWeightEntries.orderBy('date').toArray(), []);
+  const exercises = useLiveQuery(() => db.exercises.orderBy('nameHe').toArray(), []);
   const activeSession = useLiveQuery(
     () => db.workoutSessions.where('status').equals('active').first(),
     []
@@ -40,7 +55,20 @@ export function TodayPage() {
   );
 
   const firstProgram = programs?.[0];
+  const exerciseById = new Map((exercises ?? []).map((exercise) => [exercise.id, exercise]));
+  const dayById = new Map((days ?? []).map((day) => [day.id, day]));
   const recommendedDay = selectNextWorkoutDay(days ?? [], sessions ?? [], firstProgram?.id);
+  const activeDay = activeSession?.workoutDayId ? dayById.get(activeSession.workoutDayId) : null;
+  const nextDay = activeDay ?? recommendedDay;
+  const sortedNextExercises = nextDay?.exercises.slice().sort((a, b) => a.order - b.order) ?? [];
+  const nextExercisePreview = sortedNextExercises
+    .slice(0, 3)
+    .map((item) => exerciseById.get(item.exerciseId)?.nameHe ?? he.common.empty);
+  const nextExerciseRemainder = Math.max(
+    0,
+    sortedNextExercises.length - nextExercisePreview.length
+  );
+  const plannedSetCount = sortedNextExercises.reduce((sum, exercise) => sum + exercise.sets, 0);
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 7);
 
@@ -91,6 +119,25 @@ export function TodayPage() {
     Array.from(exposuresByExercise.values()).some(detectPainAlert) ? he.alerts.pain : null,
     Array.from(exposuresByExercise.values()).some(detectStagnation) ? he.alerts.stagnation : null
   ].filter(Boolean);
+  const latestWeight = bodyWeights?.at(-1)?.weightKg ?? null;
+  const latestSession = getLatestCompletedSession(sessions ?? []);
+  const latestSessionDay = latestSession?.workoutDayId
+    ? dayById.get(latestSession.workoutDayId)
+    : null;
+  const latestSessionVolume = latestSession
+    ? calculateTotalVolume(latestSession.loggedSets).toLocaleString('he-IL')
+    : null;
+  const latestSessionDuration =
+    latestSession?.completedAt === null || !latestSession
+      ? null
+      : Math.max(
+          1,
+          Math.round(
+            (new Date(latestSession.completedAt).getTime() -
+              new Date(latestSession.startedAt).getTime()) /
+              60000
+          )
+        );
 
   const startWorkout = async () => {
     if (activeSession) {
@@ -118,39 +165,32 @@ export function TodayPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <section className="overflow-hidden rounded-[1.7rem] border border-white/[0.09] bg-[linear-gradient(145deg,rgba(255,255,255,0.085),rgba(255,255,255,0.035)_42%,rgba(12,12,14,0.96))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_60px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+    <div className="space-y-5">
+      <section className="overflow-hidden rounded-[1.7rem] border border-white/[0.09] bg-[linear-gradient(145deg,rgba(200,255,46,0.12),rgba(255,255,255,0.06)_34%,rgba(12,12,14,0.98)_76%)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_60px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <p className="inline-flex items-center gap-1.5 rounded-full border border-volt/20 bg-volt/10 px-3 py-1 text-xs font-extrabold text-volt">
-              <Sparkles size={14} strokeWidth={1.5} />
-              {he.today.autoCoach}
+              <Home size={14} strokeWidth={1.5} />
+              {he.today.homeEyebrow}
             </p>
-            <h2 className="mt-1 text-3xl font-extrabold leading-tight">
-              {activeSession
-                ? he.today.resumeWorkout
-                : recommendedDay?.name || firstProgram?.name || he.programs.newProgram}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-white/62">
-              {activeSession
-                ? he.today.autoResume
-                : recommendedDay
-                  ? `${he.today.autoNext}: ${firstProgram?.name}`
-                  : he.today.autoBuild}
-            </p>
+            <h2 className="mt-2 text-4xl font-extrabold leading-tight">{he.today.homeTitle}</h2>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-white/65">{he.today.homeSubtitle}</p>
           </div>
           <Flame size={32} strokeWidth={1.5} className="text-volt" />
         </div>
+
         <div className="mb-4 grid grid-cols-3 gap-2">
           <SmartChip
-            icon={<CalendarCheck2 size={16} strokeWidth={1.5} />}
-            label={he.today.weekWorkouts}
-            value={`${completedThisWeek.length}`}
+            icon={<UserRound size={16} strokeWidth={1.5} />}
+            label={he.today.profile}
+            value={
+              preferences?.profileCompletedAt ? he.today.profileReady : he.today.profileMissing
+            }
           />
           <SmartChip
-            icon={<TrendingUp size={16} strokeWidth={1.5} />}
-            label={he.progress.prs}
-            value={prs.length}
+            icon={<Scale size={16} strokeWidth={1.5} />}
+            label={he.today.currentWeight}
+            value={latestWeight ? `${latestWeight} ${he.common.kg}` : '-'}
           />
           <SmartChip
             icon={<LockKeyhole size={16} strokeWidth={1.5} />}
@@ -158,17 +198,103 @@ export function TodayPage() {
             value={he.today.local}
           />
         </div>
-        <Button
-          icon={<Play size={20} strokeWidth={1.5} />}
-          className="w-full"
-          onClick={startWorkout}
-        >
-          {activeSession
-            ? he.today.resumeWorkout
-            : programs?.length
-              ? he.today.startWorkout
-              : he.today.buildProgram}
-        </Button>
+        <div className="rounded-[1.35rem] border border-white/[0.08] bg-black/20 p-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-extrabold text-volt">
+                {activeSession ? he.today.activeSessionLabel : he.today.nextWorkoutLabel}
+              </p>
+              <h3 className="mt-1 text-2xl font-extrabold">
+                {nextDay?.name || firstProgram?.name || he.today.noProgramTitle}
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-white/55">
+                {activeSession
+                  ? he.today.autoResume
+                  : recommendedDay
+                    ? `${he.today.autoNext}: ${firstProgram?.name}`
+                    : he.today.autoBuild}
+              </p>
+            </div>
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-volt text-ink shadow-glow">
+              <Dumbbell size={24} strokeWidth={1.5} />
+            </div>
+          </div>
+
+          {nextDay ? (
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <MiniMetric label={he.today.exercisesCount} value={sortedNextExercises.length} />
+              <MiniMetric label={he.today.plannedSets} value={plannedSetCount} />
+            </div>
+          ) : null}
+
+          {nextExercisePreview.length ? (
+            <div className="mb-4 space-y-2">
+              {nextExercisePreview.map((name) => (
+                <div
+                  key={name}
+                  className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.04] px-3 py-2"
+                >
+                  <span className="truncate text-sm font-semibold text-white/78">{name}</span>
+                  <ArrowLeft size={16} strokeWidth={1.5} className="text-white/35" />
+                </div>
+              ))}
+              {nextExerciseRemainder ? (
+                <p className="text-xs font-semibold text-white/45">
+                  {he.today.moreExercises.replace('{count}', String(nextExerciseRemainder))}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <Button
+            icon={<Play size={20} strokeWidth={1.5} />}
+            className="w-full"
+            onClick={startWorkout}
+          >
+            {activeSession
+              ? he.today.resumeWorkout
+              : programs?.length
+                ? he.today.startWorkout
+                : he.today.buildProgram}
+          </Button>
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-extrabold">{he.today.quickActions}</h2>
+          <Sparkles size={20} strokeWidth={1.5} className="text-volt" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <ActionTile
+            to="/programs"
+            icon={<CalendarCheck2 size={21} strokeWidth={1.5} />}
+            title={he.today.programsShortcut}
+            subtitle={firstProgram?.name ?? he.today.buildProgram}
+          />
+          <ActionTile
+            to="/exercises"
+            icon={<Dumbbell size={21} strokeWidth={1.5} />}
+            title={he.today.exercisesShortcut}
+            subtitle={he.exercises.subtitle}
+          />
+          <ActionTile
+            to="/progress"
+            icon={<TrendingUp size={21} strokeWidth={1.5} />}
+            title={he.today.progressShortcut}
+            subtitle={he.today.progressShortcutBody}
+          />
+          <ActionTile
+            to="/settings"
+            icon={<UserRound size={21} strokeWidth={1.5} />}
+            title={he.today.profileShortcut}
+            subtitle={
+              preferences?.ageYears && preferences?.heightCm
+                ? `${preferences.ageYears} ${he.profile.years} · ${preferences.heightCm} ${he.profile.cm}`
+                : he.today.profileMissing
+            }
+          />
+        </div>
       </section>
 
       <div className="grid grid-cols-2 gap-3">
@@ -184,6 +310,42 @@ export function TodayPage() {
           <Stat label={he.progress.prs} value={prs.length} accent />
         </Card>
       </div>
+
+      <Card>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-extrabold text-volt">{he.today.lastWorkout}</p>
+            <h2 className="mt-1 text-lg font-extrabold">
+              {latestSessionDay?.name ?? he.today.noLastWorkout}
+            </h2>
+          </div>
+          <Gauge size={22} strokeWidth={1.5} className="text-volt" />
+        </div>
+        {latestSession ? (
+          <div className="grid grid-cols-3 gap-2">
+            <MiniMetric
+              label={he.today.lastDate}
+              value={dateFormatter.format(new Date(latestSession.startedAt))}
+              numeric={false}
+            />
+            <MiniMetric label={he.today.sessionSets} value={`${latestSession.loggedSets.length}`} />
+            <MiniMetric
+              label={he.today.sessionDuration}
+              value={
+                latestSessionDuration ? `${latestSessionDuration} ${he.today.minutesShort}` : '-'
+              }
+            />
+            <div className="col-span-3">
+              <MiniMetric
+                label={he.workout.totalVolume}
+                value={`${latestSessionVolume} ${he.common.kg}`}
+              />
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm leading-6 text-white/65">{he.today.noLastWorkoutBody}</p>
+        )}
+      </Card>
 
       <Card>
         <div className="mb-4 flex items-center justify-between">
@@ -225,10 +387,68 @@ export function TodayPage() {
         )}
       </Card>
 
-      <Link to="/exercises" className="block text-center text-sm font-semibold text-volt">
-        {he.exercises.title}
+      <Link
+        to="/progress"
+        className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-volt/20 bg-volt/10 text-sm font-extrabold text-volt transition active:scale-[0.97]"
+      >
+        {he.today.viewFullProgress}
+        <ArrowLeft size={17} strokeWidth={1.5} />
       </Link>
     </div>
+  );
+}
+
+function getLatestCompletedSession(sessions: WorkoutSession[]) {
+  return sessions.slice().sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null;
+}
+
+function MiniMetric({
+  label,
+  value,
+  numeric = true
+}: {
+  label: string;
+  value: string | number;
+  numeric?: boolean;
+}) {
+  return (
+    <div className="min-w-0 rounded-2xl border border-white/[0.06] bg-white/[0.045] p-3">
+      <p className="text-[0.68rem] font-semibold text-white/45">{label}</p>
+      <p
+        className={`mt-1 truncate text-lg font-extrabold text-white ${numeric ? 'ltr-num' : ''}`}
+        dir={numeric ? 'ltr' : 'rtl'}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ActionTile({
+  to,
+  icon,
+  title,
+  subtitle
+}: {
+  to: string;
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group min-h-32 rounded-app border border-white/[0.08] bg-gradient-to-br from-surface to-[#121216] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition active:scale-[0.97]"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/[0.06] text-volt transition group-hover:bg-volt group-hover:text-ink">
+          {icon}
+        </div>
+        <ArrowLeft size={17} strokeWidth={1.5} className="text-white/35" />
+      </div>
+      <h3 className="font-extrabold">{title}</h3>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/55">{subtitle}</p>
+    </Link>
   );
 }
 
