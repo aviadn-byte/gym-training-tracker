@@ -1,12 +1,19 @@
 import { db, createId, nowIso } from '../../db/schema';
-import { createProgramFromTemplate } from '../../domain/programTemplates';
+import { createProgramFromTemplate, type TemplateId } from '../../domain/programTemplates';
 import { selectNextWorkoutDay } from '../../domain/schedule';
-import type { Program, WorkoutDay, WorkoutSession } from '../../types/models';
+import type { Program, ProgramGoal, WorkoutDay, WorkoutSession } from '../../types/models';
 
 interface StartRecommendedWorkoutInput {
   programs?: Program[];
   days?: WorkoutDay[];
   completedSessions?: WorkoutSession[];
+  starterGoal?: ProgramGoal;
+}
+
+export function recommendedTemplateForGoal(goal: ProgramGoal): TemplateId {
+  if (goal === 'strength') return 'upperLower';
+  if (goal === 'hypertrophy') return 'ppl';
+  return 'fullBody';
 }
 
 export function selectQuickStartProgram(programs: Program[] = []) {
@@ -48,7 +55,8 @@ export function buildWorkoutSession(programId: string | null, workoutDayId: stri
 export async function startRecommendedWorkout({
   programs = [],
   days = [],
-  completedSessions = []
+  completedSessions = [],
+  starterGoal = 'mixed'
 }: StartRecommendedWorkoutInput) {
   const existing = await db.workoutSessions.where('status').equals('active').first();
   if (existing) {
@@ -64,7 +72,7 @@ export async function startRecommendedWorkout({
     return { session, createdProgram: false, resumed: false };
   }
 
-  const starter = createProgramFromTemplate('fullBody', 'mixed');
+  const starter = createProgramFromTemplate(recommendedTemplateForGoal(starterGoal), starterGoal);
   const starterDay = starter.days[0];
   const session = buildWorkoutSession(starter.program.id, starterDay.id);
 

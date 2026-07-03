@@ -34,11 +34,17 @@ import {
 import { adaptPlanToTargetDuration, findSmartExerciseSwap } from '../../domain/workoutPlanning';
 import { he } from '../../i18n/he';
 import { useToastStore } from '../../stores/toastStore';
-import { startRecommendedWorkout } from './startWorkoutFlow';
+import {
+  recommendedTemplateForGoal,
+  selectQuickStartDay,
+  selectQuickStartProgram,
+  startRecommendedWorkout
+} from './startWorkoutFlow';
 import type {
   Exercise,
   LoggedSet,
   PlannedExercise,
+  ProgramGoal,
   SetType,
   WorkoutSession
 } from '../../types/models';
@@ -75,6 +81,7 @@ export function WorkoutPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [addExerciseOpen, setAddExerciseOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
+  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
   const [editingSet, setEditingSet] = useState<LoggedSet | null>(null);
   const [sessionRPE, setSessionRPE] = useState(8);
   const [confetti, setConfetti] = useState(false);
@@ -115,6 +122,19 @@ export function WorkoutPage() {
   const exerciseById = useMemo(
     () => new Map((exercises ?? []).map((exercise) => [exercise.id, exercise])),
     [exercises]
+  );
+  const quickStartProgram = useMemo(
+    () => selectQuickStartProgram(programsForStart ?? []),
+    [programsForStart]
+  );
+  const quickStartDay = useMemo(
+    () =>
+      selectQuickStartDay(
+        daysForStart ?? [],
+        completedSessionsForStart ?? [],
+        quickStartProgram?.id
+      ),
+    [completedSessionsForStart, daysForStart, quickStartProgram?.id]
   );
 
   const rawPlan = useMemo(() => {
@@ -332,11 +352,26 @@ export function WorkoutPage() {
   };
 
   const quickStartWorkout = async () => {
+    if (!quickStartDay) {
+      setGoalPickerOpen(true);
+      return;
+    }
     await startRecommendedWorkout({
       programs: programsForStart ?? [],
       days: daysForStart ?? [],
       completedSessions: completedSessionsForStart ?? []
     });
+    navigate('/workout');
+  };
+
+  const startWithGoal = async (starterGoal: ProgramGoal) => {
+    await startRecommendedWorkout({
+      programs: programsForStart ?? [],
+      days: daysForStart ?? [],
+      completedSessions: completedSessionsForStart ?? [],
+      starterGoal
+    });
+    setGoalPickerOpen(false);
     navigate('/workout');
   };
 
@@ -370,6 +405,11 @@ export function WorkoutPage() {
             {he.workout.editPrograms}
           </Button>
         </Card>
+        <GoalPickerModal
+          open={goalPickerOpen}
+          onClose={() => setGoalPickerOpen(false)}
+          onSelect={startWithGoal}
+        />
       </div>
     );
   }
@@ -770,6 +810,40 @@ function FinishWorkoutModal({
         <Button className="w-full" onClick={onFinish}>
           {he.workout.finish}
         </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function GoalPickerModal({
+  open,
+  onClose,
+  onSelect
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (goal: ProgramGoal) => void;
+}) {
+  return (
+    <Modal open={open} title={he.today.goalPickerTitle} onClose={onClose}>
+      <div className="space-y-3">
+        <p className="text-sm leading-6 text-white/62">{he.today.goalPickerBody}</p>
+        {(['strength', 'hypertrophy', 'mixed'] as ProgramGoal[]).map((goal) => (
+          <button
+            key={goal}
+            type="button"
+            onClick={() => onSelect(goal)}
+            className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.045] p-4 text-right transition hover:border-volt/35 hover:bg-volt/10 active:scale-[0.98]"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-extrabold">{he.programs[goal]}</h3>
+              <span className="rounded-full bg-volt/12 px-3 py-1 text-xs font-extrabold text-volt">
+                {he.programs[recommendedTemplateForGoal(goal)]}
+              </span>
+            </div>
+            <p className="text-sm leading-6 text-white/68">{he.programs.goalDetails[goal]}</p>
+          </button>
+        ))}
       </div>
     </Modal>
   );

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { selectQuickStartDay, selectQuickStartProgram } from './startWorkoutFlow';
+import {
+  recommendedTemplateForGoal,
+  selectQuickStartDay,
+  selectQuickStartProgram
+} from './startWorkoutFlow';
 import type { PlannedExercise, Program, WorkoutDay, WorkoutSession } from '../../types/models';
 
 const plannedExercise: PlannedExercise = {
@@ -70,5 +74,11 @@ describe('quick start workout selection', () => {
     );
 
     expect(day?.id).toBe('ready');
+  });
+
+  it('maps one goal choice to the recommended program structure', () => {
+    expect(recommendedTemplateForGoal('strength')).toBe('upperLower');
+    expect(recommendedTemplateForGoal('hypertrophy')).toBe('ppl');
+    expect(recommendedTemplateForGoal('mixed')).toBe('fullBody');
   });
 });

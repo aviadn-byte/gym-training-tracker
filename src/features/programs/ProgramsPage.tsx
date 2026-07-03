@@ -5,16 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
-import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { db, createId, nowIso } from '../../db/schema';
-import {
-  createEmptyProgram,
-  createProgramFromTemplate,
-  goalDefaults,
-  type TemplateId
-} from '../../domain/programTemplates';
+import { createProgramFromTemplate, goalDefaults } from '../../domain/programTemplates';
 import { he } from '../../i18n/he';
-import { buildWorkoutSession } from '../workout/startWorkoutFlow';
+import { buildWorkoutSession, recommendedTemplateForGoal } from '../workout/startWorkoutFlow';
 import type {
   Exercise,
   PlannedExercise,
@@ -22,18 +16,6 @@ import type {
   ProgramGoal,
   WorkoutDay
 } from '../../types/models';
-
-const goalOptions: Array<{ value: ProgramGoal; label: string }> = [
-  { value: 'strength', label: he.programs.strength },
-  { value: 'hypertrophy', label: he.programs.hypertrophy },
-  { value: 'mixed', label: he.programs.mixed }
-];
-
-const templateOptions: Array<{ id: TemplateId; label: string }> = [
-  { id: 'ppl', label: he.programs.ppl },
-  { id: 'upperLower', label: he.programs.upperLower },
-  { id: 'fullBody', label: he.programs.fullBody }
-];
 
 export function ProgramsPage() {
   const navigate = useNavigate();
@@ -63,20 +45,14 @@ export function ProgramsPage() {
     return map;
   }, [days]);
 
-  const createTemplate = async (templateId: TemplateId, goal: ProgramGoal) => {
-    const { program, days: templateDays } = createProgramFromTemplate(templateId, goal);
+  const createAutoProgram = async (goal: ProgramGoal) => {
+    const { program, days: templateDays } = createProgramFromTemplate(
+      recommendedTemplateForGoal(goal),
+      goal
+    );
     await db.transaction('rw', db.programs, db.workoutDays, async () => {
       await db.programs.put(program);
       await db.workoutDays.bulkPut(templateDays);
-    });
-    setCreateOpen(false);
-  };
-
-  const createBlank = async (name: string, goal: ProgramGoal, daysPerWeek: number) => {
-    const { program, days: blankDays } = createEmptyProgram(name, goal, daysPerWeek);
-    await db.transaction('rw', db.programs, db.workoutDays, async () => {
-      await db.programs.put(program);
-      await db.workoutDays.bulkPut(blankDays);
     });
     setCreateOpen(false);
   };
@@ -228,8 +204,7 @@ export function ProgramsPage() {
       <CreateProgramModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onTemplate={createTemplate}
-        onBlank={createBlank}
+        onCreate={createAutoProgram}
       />
       <AddPlannedExerciseModal
         day={addExerciseDay}
@@ -402,60 +377,30 @@ function SmallMetric({ label, value }: { label: string; value: string | number }
 interface CreateProgramModalProps {
   open: boolean;
   onClose: () => void;
-  onTemplate: (templateId: TemplateId, goal: ProgramGoal) => void;
-  onBlank: (name: string, goal: ProgramGoal, daysPerWeek: number) => void;
+  onCreate: (goal: ProgramGoal) => void;
 }
 
-function CreateProgramModal({ open, onClose, onTemplate, onBlank }: CreateProgramModalProps) {
-  const [goal, setGoal] = useState<ProgramGoal>('hypertrophy');
-  const [name, setName] = useState('תוכנית חדשה');
-  const [daysPerWeek, setDaysPerWeek] = useState(4);
-
+function CreateProgramModal({ open, onClose, onCreate }: CreateProgramModalProps) {
   return (
     <Modal open={open} title={he.programs.newProgram} onClose={onClose}>
-      <div className="space-y-5">
-        <SegmentedControl value={goal} options={goalOptions} onChange={setGoal} />
-        <div className="grid gap-2">
-          {templateOptions.map((template) => (
-            <Button
-              key={template.id}
-              variant="secondary"
-              className="w-full"
-              onClick={() => onTemplate(template.id, goal)}
-            >
-              {he.programs.createFromTemplate}: {template.label}
-            </Button>
-          ))}
-        </div>
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3">
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold text-muted">
-              {he.programs.programName}
-            </span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="min-h-12 w-full rounded-2xl border border-white/[0.08] bg-[#111116] px-4 text-white outline-none"
-            />
-          </label>
-          <label className="mt-3 block">
-            <span className="mb-2 block text-xs font-semibold text-muted">
-              {he.programs.daysPerWeek}
-            </span>
-            <input
-              value={daysPerWeek}
-              type="number"
-              min={1}
-              max={7}
-              onChange={(event) => setDaysPerWeek(Number(event.target.value))}
-              className="ltr-num min-h-12 w-full rounded-2xl border border-white/[0.08] bg-[#111116] px-4 text-white outline-none"
-              dir="ltr"
-            />
-          </label>
-          <Button className="mt-3 w-full" onClick={() => onBlank(name, goal, daysPerWeek)}>
-            {he.programs.createBlank}
-          </Button>
-        </div>
+      <div className="space-y-3">
+        <p className="text-sm leading-6 text-white/62">{he.programs.goalChoiceBody}</p>
+        {(['strength', 'hypertrophy', 'mixed'] as ProgramGoal[]).map((goal) => (
+          <button
+            key={goal}
+            type="button"
+            onClick={() => onCreate(goal)}
+            className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.045] p-4 text-right transition hover:border-volt/35 hover:bg-volt/10 active:scale-[0.98]"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-extrabold">{he.programs[goal]}</h3>
+              <span className="rounded-full bg-volt/12 px-3 py-1 text-xs font-extrabold text-volt">
+                {he.programs[recommendedTemplateForGoal(goal)]}
+              </span>
+            </div>
+            <p className="text-sm leading-6 text-white/68">{he.programs.goalDetails[goal]}</p>
+          </button>
+        ))}
       </div>
     </Modal>
   );

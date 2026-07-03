@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -18,6 +18,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
 import { Stat } from '../../components/ui/Stat';
 import { db } from '../../db/schema';
 import {
@@ -32,11 +33,12 @@ import {
 import { selectNextWorkoutDay } from '../../domain/schedule';
 import { he } from '../../i18n/he';
 import {
+  recommendedTemplateForGoal,
   selectQuickStartDay,
   selectQuickStartProgram,
   startRecommendedWorkout
 } from '../workout/startWorkoutFlow';
-import type { WorkoutSession } from '../../types/models';
+import type { ProgramGoal, WorkoutSession } from '../../types/models';
 
 const dateFormatter = new Intl.DateTimeFormat('he-IL', {
   day: '2-digit',
@@ -45,6 +47,7 @@ const dateFormatter = new Intl.DateTimeFormat('he-IL', {
 
 export function TodayPage() {
   const navigate = useNavigate();
+  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
   const preferences = useLiveQuery(() => db.preferences.get('prefs'), []);
   const bodyWeights = useLiveQuery(() => db.bodyWeightEntries.orderBy('date').toArray(), []);
   const exercises = useLiveQuery(() => db.exercises.orderBy('nameHe').toArray(), []);
@@ -147,11 +150,26 @@ export function TodayPage() {
         );
 
   const startWorkout = async () => {
+    if (!activeSession && !recommendedDay) {
+      setGoalPickerOpen(true);
+      return;
+    }
     await startRecommendedWorkout({
       programs: programs ?? [],
       days: days ?? [],
       completedSessions: sessions ?? []
     });
+    navigate('/workout');
+  };
+
+  const startWithGoal = async (starterGoal: ProgramGoal) => {
+    await startRecommendedWorkout({
+      programs: programs ?? [],
+      days: days ?? [],
+      completedSessions: sessions ?? [],
+      starterGoal
+    });
+    setGoalPickerOpen(false);
     navigate('/workout');
   };
 
@@ -390,7 +408,47 @@ export function TodayPage() {
         {he.today.viewFullProgress}
         <ArrowLeft size={17} strokeWidth={1.5} />
       </Link>
+
+      <GoalPickerModal
+        open={goalPickerOpen}
+        onClose={() => setGoalPickerOpen(false)}
+        onSelect={startWithGoal}
+      />
     </div>
+  );
+}
+
+function GoalPickerModal({
+  open,
+  onClose,
+  onSelect
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (goal: ProgramGoal) => void;
+}) {
+  return (
+    <Modal open={open} title={he.today.goalPickerTitle} onClose={onClose}>
+      <div className="space-y-3">
+        <p className="text-sm leading-6 text-white/62">{he.today.goalPickerBody}</p>
+        {(['strength', 'hypertrophy', 'mixed'] as ProgramGoal[]).map((goal) => (
+          <button
+            key={goal}
+            type="button"
+            onClick={() => onSelect(goal)}
+            className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.045] p-4 text-right transition hover:border-volt/35 hover:bg-volt/10 active:scale-[0.98]"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-extrabold">{he.programs[goal]}</h3>
+              <span className="rounded-full bg-volt/12 px-3 py-1 text-xs font-extrabold text-volt">
+                {he.programs[recommendedTemplateForGoal(goal)]}
+              </span>
+            </div>
+            <p className="text-sm leading-6 text-white/68">{he.programs.goalDetails[goal]}</p>
+          </button>
+        ))}
+      </div>
+    </Modal>
   );
 }
 
