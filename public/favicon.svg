@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="מסלול כוח">
+  <rect width="512" height="512" rx="112" fill="#0A0A0C" />
+  <rect x="42" y="42" width="428" height="428" rx="92" fill="#151519" stroke="rgba(255,255,255,.10)" stroke-width="8" />
+  <path d="M286 54 132 286h102l-21 172 167-252H272l14-152Z" fill="#C8FF2E" />
+  <g fill="none" stroke="#0A0A0C" stroke-linecap="round" stroke-width="30">
+    <path d="M160 300h192" />
+    <path d="M124 262v76" />
+    <path d="M388 262v76" />
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-opacity=".86" stroke-width="18">
+    <path d="M142 320h228" />
+    <path d="M104 282v76" />
+    <path d="M408 282v76" />
+  </g>
+</svg>
+

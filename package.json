@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings=0 && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@vite-pwa/assets-generator": "^0.2.6",
