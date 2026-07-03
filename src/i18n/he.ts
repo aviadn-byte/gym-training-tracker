@@ -157,6 +157,11 @@ export const he = {
   settings: {
     title: 'הגדרות',
     data: 'נתונים',
+    aiExportTitle: 'ניתוח AI',
+    aiExportDescription: 'ייצוא חבילת נתונים נקייה עם פרומפט מוכן ל-ChatGPT, Claude או Gemini.',
+    aiExportAction: 'הורד חבילת AI',
+    aiExportReady: 'חבילת ה-AI ירדה למכשיר',
+    aiExportReadyBody: 'העלה את קובץ ה-JSON וה-CSV יחד עם הפרומפט למודל שבחרת.',
     jsonBackup: 'גיבוי JSON מלא',
     restoreJson: 'שחזור JSON',
     importCsv: 'ייבוא CSV מ-Hevy או Strong',

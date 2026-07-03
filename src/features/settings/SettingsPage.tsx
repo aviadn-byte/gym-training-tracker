@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Download, FileUp, ShieldAlert, Upload } from 'lucide-react';
+import { BrainCircuit, Download, FileUp, ShieldAlert, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { NumberStepper } from '../../components/ui/NumberStepper';
 import { db } from '../../db/schema';
+import { buildAiAnalysisPackage } from '../../domain/aiExport';
 import { parseWorkoutCsv } from '../../domain/importers';
 import { he } from '../../i18n/he';
 import { useToastStore } from '../../stores/toastStore';
@@ -37,14 +38,50 @@ export function SettingsPage() {
       bodyWeightEntries: await db.bodyWeightEntries.toArray(),
       preferences: await db.preferences.toArray()
     };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `training-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(
+      `training-backup-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(backup, null, 2),
+      'application/json;charset=utf-8'
+    );
     pushToast({ tone: 'success', title: he.settings.backupReady });
+  };
+
+  const exportAiAnalysis = async () => {
+    const exportedAt = new Date().toISOString();
+    const stamp = exportedAt.slice(0, 10);
+    const aiPackage = buildAiAnalysisPackage(
+      {
+        exercises: await db.exercises.toArray(),
+        programs: await db.programs.toArray(),
+        workoutDays: await db.workoutDays.toArray(),
+        workoutSessions: await db.workoutSessions.toArray(),
+        bodyWeightEntries: await db.bodyWeightEntries.toArray(),
+        preferences: await db.preferences.toArray()
+      },
+      exportedAt
+    );
+
+    downloadTextFile(
+      `training-ai-data-${stamp}.json`,
+      JSON.stringify(aiPackage.data, null, 2),
+      'application/json;charset=utf-8'
+    );
+    downloadTextFile(
+      `training-ai-sets-${stamp}.csv`,
+      `\uFEFF${aiPackage.setsCsv}`,
+      'text/csv;charset=utf-8'
+    );
+    downloadTextFile(
+      `training-ai-prompt-${stamp}.md`,
+      aiPackage.prompt,
+      'text/markdown;charset=utf-8'
+    );
+
+    pushToast({
+      tone: 'success',
+      title: he.settings.aiExportReady,
+      body: he.settings.aiExportReadyBody
+    });
   };
 
   const restoreJson = async (file: File) => {
@@ -119,6 +156,26 @@ export function SettingsPage() {
         <h2 className="text-3xl font-extrabold">{he.settings.title}</h2>
         <p className="text-sm text-muted">{he.settings.data}</p>
       </div>
+      <Card className="space-y-4 border-volt/25 bg-gradient-to-br from-volt/[0.08] to-surface">
+        <div className="flex items-start gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-volt/15 text-volt shadow-glow">
+            <BrainCircuit size={24} strokeWidth={1.5} />
+          </div>
+          <div>
+            <h3 className="text-xl font-extrabold">{he.settings.aiExportTitle}</h3>
+            <p className="mt-1 text-sm leading-6 text-white/65">
+              {he.settings.aiExportDescription}
+            </p>
+          </div>
+        </div>
+        <Button
+          className="w-full"
+          icon={<Download size={20} strokeWidth={1.5} />}
+          onClick={exportAiAnalysis}
+        >
+          {he.settings.aiExportAction}
+        </Button>
+      </Card>
       <Card className="space-y-3">
         <Button
           variant="secondary"
@@ -202,6 +259,16 @@ export function SettingsPage() {
       </Modal>
     </div>
   );
+}
+
+function downloadTextFile(filename: string, contents: string, type: string) {
+  const blob = new Blob([contents], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 function FileButton({
