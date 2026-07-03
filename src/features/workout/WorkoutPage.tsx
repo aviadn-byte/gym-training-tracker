@@ -394,7 +394,7 @@ export function WorkoutPage() {
           suffix={he.common.reps}
           onChange={(reps) => setDraft((current) => ({ ...current, reps }))}
         />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <NumberStepper
             label={he.common.rpe}
             value={draft.rpe ?? 0}
@@ -554,7 +554,7 @@ function EditSetModal({
           value={draft.reps}
           onChange={(reps) => setDraft({ ...draft, reps })}
         />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <NumberStepper
             label={he.common.rpe}
             value={draft.rpe ?? 0}
