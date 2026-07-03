@@ -1,4 +1,13 @@
-import { AlertTriangle, Flame, Play, TrendingUp } from 'lucide-react';
+import type { ReactNode } from 'react';
+import {
+  AlertTriangle,
+  CalendarCheck2,
+  Flame,
+  LockKeyhole,
+  Play,
+  Sparkles,
+  TrendingUp
+} from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
@@ -14,6 +23,7 @@ import {
   detectWeeklyLoadAlert,
   type Exposure
 } from '../../domain/training';
+import { selectNextWorkoutDay } from '../../domain/schedule';
 import { he } from '../../i18n/he';
 
 export function TodayPage() {
@@ -30,7 +40,7 @@ export function TodayPage() {
   );
 
   const firstProgram = programs?.[0];
-  const firstDay = days?.find((day) => day.programId === firstProgram?.id);
+  const recommendedDay = selectNextWorkoutDay(days ?? [], sessions ?? [], firstProgram?.id);
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 7);
 
@@ -87,13 +97,13 @@ export function TodayPage() {
       navigate('/workout');
       return;
     }
-    if (!firstProgram || !firstDay) {
+    if (!firstProgram || !recommendedDay) {
       navigate('/programs');
       return;
     }
     await db.workoutSessions.put({
       id: createId('session'),
-      workoutDayId: firstDay.id,
+      workoutDayId: recommendedDay.id,
       programId: firstProgram.id,
       startedAt: nowIso(),
       completedAt: null,
@@ -109,17 +119,44 @@ export function TodayPage() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[1.6rem] border border-volt/20 bg-[linear-gradient(135deg,rgba(200,255,46,0.14),rgba(255,255,255,0.03)_45%,rgba(21,21,25,0.95))] p-5 shadow-glow">
-        <div className="mb-8 flex items-start justify-between gap-4">
+      <section className="overflow-hidden rounded-[1.7rem] border border-white/[0.09] bg-[linear-gradient(145deg,rgba(255,255,255,0.085),rgba(255,255,255,0.035)_42%,rgba(12,12,14,0.96))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_60px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+        <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-volt">{he.today.nextWorkout}</p>
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-volt/20 bg-volt/10 px-3 py-1 text-xs font-extrabold text-volt">
+              <Sparkles size={14} strokeWidth={1.5} />
+              {he.today.autoCoach}
+            </p>
             <h2 className="mt-1 text-3xl font-extrabold leading-tight">
               {activeSession
                 ? he.today.resumeWorkout
-                : firstProgram?.name || he.programs.newProgram}
+                : recommendedDay?.name || firstProgram?.name || he.programs.newProgram}
             </h2>
+            <p className="mt-2 text-sm leading-6 text-white/62">
+              {activeSession
+                ? he.today.autoResume
+                : recommendedDay
+                  ? `${he.today.autoNext}: ${firstProgram?.name}`
+                  : he.today.autoBuild}
+            </p>
           </div>
           <Flame size={32} strokeWidth={1.5} className="text-volt" />
+        </div>
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          <SmartChip
+            icon={<CalendarCheck2 size={16} strokeWidth={1.5} />}
+            label={he.today.weekWorkouts}
+            value={`${completedThisWeek.length}`}
+          />
+          <SmartChip
+            icon={<TrendingUp size={16} strokeWidth={1.5} />}
+            label={he.progress.prs}
+            value={prs.length}
+          />
+          <SmartChip
+            icon={<LockKeyhole size={16} strokeWidth={1.5} />}
+            label={he.today.dataMode}
+            value={he.today.local}
+          />
         </div>
         <Button
           icon={<Play size={20} strokeWidth={1.5} />}
@@ -191,6 +228,26 @@ export function TodayPage() {
       <Link to="/exercises" className="block text-center text-sm font-semibold text-volt">
         {he.exercises.title}
       </Link>
+    </div>
+  );
+}
+
+function SmartChip({
+  icon,
+  label,
+  value
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.055] px-3 py-2">
+      <div className="mb-1 flex items-center gap-1.5 text-white/50">
+        {icon}
+        <span className="truncate text-[0.7rem] font-semibold">{label}</span>
+      </div>
+      <p className="truncate text-sm font-extrabold text-white">{value}</p>
     </div>
   );
 }

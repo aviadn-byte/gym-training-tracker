@@ -53,7 +53,14 @@ export const he = {
     consistency: 'רצף השבוע',
     alerts: 'התראות חכמות',
     noAlerts: 'אין דגלים כרגע. יפה.',
-    buildProgram: 'בנה תוכנית ראשונה'
+    buildProgram: 'בנה תוכנית ראשונה',
+    autoCoach: 'מאמן חכם',
+    autoResume: 'מצאתי אימון פתוח. ממשיכים בדיוק מאיפה שעצרת.',
+    autoNext: 'האימון הבא נבחר אוטומטית',
+    autoBuild: 'אין תוכנית פעילה. בונים אחת ומתחילים.',
+    weekWorkouts: 'השבוע',
+    dataMode: 'נתונים',
+    local: 'מקומי'
   },
   exercises: {
     title: 'מאגר תרגילים',
