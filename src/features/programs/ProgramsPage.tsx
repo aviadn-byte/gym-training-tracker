@@ -14,6 +14,7 @@ import {
   type TemplateId
 } from '../../domain/programTemplates';
 import { he } from '../../i18n/he';
+import { buildWorkoutSession } from '../workout/startWorkoutFlow';
 import type {
   Exercise,
   PlannedExercise,
@@ -152,19 +153,7 @@ export function ProgramsPage() {
       navigate('/workout');
       return;
     }
-    await db.workoutSessions.put({
-      id: createId('session'),
-      workoutDayId: day.id,
-      programId: program.id,
-      startedAt: nowIso(),
-      completedAt: null,
-      notes: '',
-      sessionRPE: null,
-      status: 'active',
-      loggedSets: [],
-      addedExercises: [],
-      skippedExerciseIds: []
-    });
+    await db.workoutSessions.put(buildWorkoutSession(program.id, day.id));
     navigate('/workout');
   };
 

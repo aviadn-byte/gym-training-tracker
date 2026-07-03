@@ -8,18 +8,18 @@ import {
   Gauge,
   Home,
   LockKeyhole,
-  Play,
   Scale,
   Sparkles,
   TrendingUp,
-  UserRound
+  UserRound,
+  Zap
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Stat } from '../../components/ui/Stat';
-import { db, createId, nowIso } from '../../db/schema';
+import { db } from '../../db/schema';
 import {
   calculateE1RM,
   calculateTotalVolume,
@@ -31,6 +31,11 @@ import {
 } from '../../domain/training';
 import { selectNextWorkoutDay } from '../../domain/schedule';
 import { he } from '../../i18n/he';
+import {
+  selectQuickStartDay,
+  selectQuickStartProgram,
+  startRecommendedWorkout
+} from '../workout/startWorkoutFlow';
 import type { WorkoutSession } from '../../types/models';
 
 const dateFormatter = new Intl.DateTimeFormat('he-IL', {
@@ -54,10 +59,12 @@ export function TodayPage() {
     []
   );
 
-  const firstProgram = programs?.[0];
+  const firstProgram = selectQuickStartProgram(programs ?? []);
   const exerciseById = new Map((exercises ?? []).map((exercise) => [exercise.id, exercise]));
   const dayById = new Map((days ?? []).map((day) => [day.id, day]));
-  const recommendedDay = selectNextWorkoutDay(days ?? [], sessions ?? [], firstProgram?.id);
+  const recommendedDay =
+    selectQuickStartDay(days ?? [], sessions ?? [], firstProgram?.id) ??
+    selectNextWorkoutDay(days ?? [], sessions ?? [], firstProgram?.id);
   const activeDay = activeSession?.workoutDayId ? dayById.get(activeSession.workoutDayId) : null;
   const nextDay = activeDay ?? recommendedDay;
   const sortedNextExercises = nextDay?.exercises.slice().sort((a, b) => a.order - b.order) ?? [];
@@ -140,26 +147,10 @@ export function TodayPage() {
         );
 
   const startWorkout = async () => {
-    if (activeSession) {
-      navigate('/workout');
-      return;
-    }
-    if (!firstProgram || !recommendedDay) {
-      navigate('/programs');
-      return;
-    }
-    await db.workoutSessions.put({
-      id: createId('session'),
-      workoutDayId: recommendedDay.id,
-      programId: firstProgram.id,
-      startedAt: nowIso(),
-      completedAt: null,
-      notes: '',
-      sessionRPE: null,
-      status: 'active',
-      loggedSets: [],
-      addedExercises: [],
-      skippedExerciseIds: []
+    await startRecommendedWorkout({
+      programs: programs ?? [],
+      days: days ?? [],
+      completedSessions: sessions ?? []
     });
     navigate('/workout');
   };
@@ -179,30 +170,11 @@ export function TodayPage() {
           <Flame size={32} strokeWidth={1.5} className="text-volt" />
         </div>
 
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          <SmartChip
-            icon={<UserRound size={16} strokeWidth={1.5} />}
-            label={he.today.profile}
-            value={
-              preferences?.profileCompletedAt ? he.today.profileReady : he.today.profileMissing
-            }
-          />
-          <SmartChip
-            icon={<Scale size={16} strokeWidth={1.5} />}
-            label={he.today.currentWeight}
-            value={latestWeight ? `${latestWeight} ${he.common.kg}` : '-'}
-          />
-          <SmartChip
-            icon={<LockKeyhole size={16} strokeWidth={1.5} />}
-            label={he.today.dataMode}
-            value={he.today.local}
-          />
-        </div>
         <div className="rounded-[1.35rem] border border-white/[0.08] bg-black/20 p-3">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-extrabold text-volt">
-                {activeSession ? he.today.activeSessionLabel : he.today.nextWorkoutLabel}
+                {activeSession ? he.today.activeSessionLabel : he.today.quickStartLabel}
               </p>
               <h3 className="mt-1 text-2xl font-extrabold">
                 {nextDay?.name || firstProgram?.name || he.today.noProgramTitle}
@@ -219,6 +191,22 @@ export function TodayPage() {
               <Dumbbell size={24} strokeWidth={1.5} />
             </div>
           </div>
+
+          <Button
+            icon={<Zap size={20} strokeWidth={1.5} />}
+            className="mb-3 min-h-16 w-full rounded-[1.35rem] text-lg font-extrabold"
+            onClick={startWorkout}
+          >
+            {activeSession ? he.today.resumeWorkout : he.today.startNow}
+          </Button>
+
+          <p className="mb-4 rounded-2xl border border-volt/15 bg-volt/10 px-3 py-2 text-center text-xs font-extrabold text-volt">
+            {activeSession
+              ? he.today.oneTapResume
+              : recommendedDay
+                ? he.today.oneTapStart
+                : he.today.autoCreateAndStart}
+          </p>
 
           {nextDay ? (
             <div className="mb-3 grid grid-cols-2 gap-2">
@@ -245,18 +233,26 @@ export function TodayPage() {
               ) : null}
             </div>
           ) : null}
+        </div>
 
-          <Button
-            icon={<Play size={20} strokeWidth={1.5} />}
-            className="w-full"
-            onClick={startWorkout}
-          >
-            {activeSession
-              ? he.today.resumeWorkout
-              : programs?.length
-                ? he.today.startWorkout
-                : he.today.buildProgram}
-          </Button>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <SmartChip
+            icon={<UserRound size={16} strokeWidth={1.5} />}
+            label={he.today.profile}
+            value={
+              preferences?.profileCompletedAt ? he.today.profileReady : he.today.profileMissing
+            }
+          />
+          <SmartChip
+            icon={<Scale size={16} strokeWidth={1.5} />}
+            label={he.today.currentWeight}
+            value={latestWeight ? `${latestWeight} ${he.common.kg}` : '-'}
+          />
+          <SmartChip
+            icon={<LockKeyhole size={16} strokeWidth={1.5} />}
+            label={he.today.dataMode}
+            value={he.today.local}
+          />
         </div>
       </section>
 

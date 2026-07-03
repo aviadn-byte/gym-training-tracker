@@ -8,7 +8,8 @@ import {
   Plus,
   Save,
   Shuffle,
-  Trash2
+  Trash2,
+  Zap
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -33,6 +34,7 @@ import {
 import { adaptPlanToTargetDuration, findSmartExerciseSwap } from '../../domain/workoutPlanning';
 import { he } from '../../i18n/he';
 import { useToastStore } from '../../stores/toastStore';
+import { startRecommendedWorkout } from './startWorkoutFlow';
 import type {
   Exercise,
   LoggedSet,
@@ -84,6 +86,15 @@ export function WorkoutPage() {
 
   const session = useLiveQuery(
     () => db.workoutSessions.where('status').equals('active').first(),
+    []
+  );
+  const programsForStart = useLiveQuery(
+    () => db.programs.where('status').equals('active').toArray(),
+    []
+  );
+  const daysForStart = useLiveQuery(() => db.workoutDays.orderBy('order').toArray(), []);
+  const completedSessionsForStart = useLiveQuery(
+    () => db.workoutSessions.where('status').equals('completed').toArray(),
     []
   );
   const day = useLiveQuery(
@@ -320,6 +331,15 @@ export function WorkoutPage() {
     setRestStartedAt(null);
   };
 
+  const quickStartWorkout = async () => {
+    await startRecommendedWorkout({
+      programs: programsForStart ?? [],
+      days: daysForStart ?? [],
+      completedSessions: completedSessionsForStart ?? []
+    });
+    navigate('/workout');
+  };
+
   if (summary) {
     return <WorkoutSummary summary={summary} onClose={() => setSummary(null)} />;
   }
@@ -335,9 +355,19 @@ export function WorkoutPage() {
           <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl border border-volt/25 bg-volt/10 shadow-glow">
             <Dumbbell size={30} strokeWidth={1.5} className="text-volt" />
           </div>
-          <h3 className="text-xl font-extrabold">{he.workout.activeTitle}</h3>
-          <Button className="mt-5 w-full" onClick={() => navigate('/programs')}>
-            {he.today.startWorkout}
+          <h3 className="text-xl font-extrabold">{he.workout.noActiveTitle}</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-white/62">
+            {he.workout.noActiveBody}
+          </p>
+          <Button
+            className="mt-5 min-h-16 w-full rounded-[1.35rem] text-lg font-extrabold"
+            icon={<Zap size={20} strokeWidth={1.5} />}
+            onClick={quickStartWorkout}
+          >
+            {he.workout.quickStart}
+          </Button>
+          <Button variant="secondary" className="mt-3 w-full" onClick={() => navigate('/programs')}>
+            {he.workout.editPrograms}
           </Button>
         </Card>
       </div>
