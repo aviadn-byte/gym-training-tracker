@@ -39,6 +39,9 @@ export const createId = (prefix: string) => `${prefix}_${crypto.randomUUID()}`;
 export const defaultPreferences: AppPreferences = {
   id: 'prefs',
   disclaimerAcceptedAt: null,
+  profileCompletedAt: null,
+  ageYears: null,
+  heightCm: null,
   barWeightKg: 20,
   installPromptDismissedAt: null
 };
@@ -49,5 +52,9 @@ export async function ensurePreferences() {
     await db.preferences.put(defaultPreferences);
     return defaultPreferences;
   }
-  return existing;
+  const merged = { ...defaultPreferences, ...existing };
+  if (Object.keys(defaultPreferences).some((key) => !(key in existing))) {
+    await db.preferences.put(merged);
+  }
+  return merged;
 }

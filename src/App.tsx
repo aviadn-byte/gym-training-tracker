@@ -3,8 +3,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppShell } from './components/layout/AppShell';
 import { DisclaimerModal } from './components/DisclaimerModal';
+import { ProfileSetupModal, type ProfileDraft } from './components/ProfileSetupModal';
 import { bootstrapDatabase } from './db/bootstrap';
-import { db, nowIso } from './db/schema';
+import { db, createId, nowIso } from './db/schema';
 import { ExercisesPage } from './features/exercises/ExercisesPage';
 import { TodayPage } from './features/today/TodayPage';
 import { ProgramsPage } from './features/programs/ProgramsPage';
@@ -12,10 +13,12 @@ import { WorkoutPage } from './features/workout/WorkoutPage';
 import { ProgressPage } from './features/progress/ProgressPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { ToastViewport } from './components/ui/ToastViewport';
+import { he } from './i18n/he';
 
 export function App() {
   const [ready, setReady] = useState(false);
   const preferences = useLiveQuery(() => db.preferences.get('prefs'), []);
+  const bodyWeights = useLiveQuery(() => db.bodyWeightEntries.orderBy('date').toArray(), []);
 
   useEffect(() => {
     bootstrapDatabase().finally(() => setReady(true));
@@ -23,6 +26,23 @@ export function App() {
 
   const acceptDisclaimer = async () => {
     await db.preferences.update('prefs', { disclaimerAcceptedAt: nowIso() });
+  };
+
+  const saveProfile = async ({ ageYears, heightCm, weightKg }: ProfileDraft) => {
+    const savedAt = nowIso();
+    await db.transaction('rw', [db.preferences, db.bodyWeightEntries], async () => {
+      await db.preferences.update('prefs', {
+        ageYears,
+        heightCm,
+        profileCompletedAt: savedAt
+      });
+      await db.bodyWeightEntries.put({
+        id: createId('weight'),
+        date: savedAt,
+        weightKg,
+        note: he.profile.initialWeightNote
+      });
+    });
   };
 
   if (!ready) {
@@ -50,6 +70,13 @@ export function App() {
         </Routes>
       </AppShell>
       <DisclaimerModal open={!preferences?.disclaimerAcceptedAt} onAccept={acceptDisclaimer} />
+      <ProfileSetupModal
+        open={Boolean(preferences?.disclaimerAcceptedAt && !preferences.profileCompletedAt)}
+        initialAgeYears={preferences?.ageYears}
+        initialHeightCm={preferences?.heightCm}
+        initialWeightKg={bodyWeights?.at(-1)?.weightKg}
+        onSave={saveProfile}
+      />
       <ToastViewport />
     </>
   );

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import { BrainCircuit, Download, FileUp, ShieldAlert, Upload } from 'lucide-react';
+import { BrainCircuit, Download, FileUp, ShieldAlert, Upload, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { ProfileSetupModal, type ProfileDraft } from '../../components/ProfileSetupModal';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { NumberStepper } from '../../components/ui/NumberStepper';
-import { db } from '../../db/schema';
+import { db, createId, nowIso } from '../../db/schema';
 import { buildAiAnalysisPackage } from '../../domain/aiExport';
 import { parseWorkoutCsv } from '../../domain/importers';
 import { he } from '../../i18n/he';
@@ -23,9 +24,12 @@ export function SettingsPage() {
   const pushToast = useToastStore((state) => state.pushToast);
   const preferences = useLiveQuery(() => db.preferences.get('prefs'), []);
   const exercises = useLiveQuery(() => db.exercises.orderBy('nameHe').toArray(), []);
+  const bodyWeights = useLiveQuery(() => db.bodyWeightEntries.orderBy('date').toArray(), []);
   const [pendingCsv, setPendingCsv] = useState<PendingCsvImport | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const exerciseOptions = useMemo(() => exercises ?? [], [exercises]);
+  const latestWeight = bodyWeights?.at(-1)?.weightKg ?? null;
 
   const exportJson = async () => {
     const backup = {
@@ -150,12 +154,58 @@ export function SettingsPage() {
     setPendingCsv(null);
   };
 
+  const saveProfile = async ({ ageYears, heightCm, weightKg }: ProfileDraft) => {
+    const savedAt = nowIso();
+    await db.transaction('rw', [db.preferences, db.bodyWeightEntries], async () => {
+      await db.preferences.update('prefs', {
+        ageYears,
+        heightCm,
+        profileCompletedAt: preferences?.profileCompletedAt ?? savedAt
+      });
+      await db.bodyWeightEntries.put({
+        id: createId('weight'),
+        date: savedAt,
+        weightKg,
+        note: he.profile.updatedWeightNote
+      });
+    });
+    setProfileOpen(false);
+    pushToast({ tone: 'success', title: he.profile.saved });
+  };
+
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-3xl font-extrabold">{he.settings.title}</h2>
         <p className="text-sm text-muted">{he.settings.data}</p>
       </div>
+      <Card className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.06] text-volt">
+            <UserRound size={23} strokeWidth={1.5} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl font-extrabold">{he.profile.settingsTitle}</h3>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <ProfileMiniStat
+                label={he.profile.age}
+                value={preferences?.ageYears ? `${preferences.ageYears} ${he.profile.years}` : '-'}
+              />
+              <ProfileMiniStat
+                label={he.profile.height}
+                value={preferences?.heightCm ? `${preferences.heightCm} ${he.profile.cm}` : '-'}
+              />
+              <ProfileMiniStat
+                label={he.profile.weight}
+                value={latestWeight ? `${latestWeight} ${he.common.kg}` : '-'}
+              />
+            </div>
+          </div>
+        </div>
+        <Button variant="secondary" className="w-full" onClick={() => setProfileOpen(true)}>
+          {he.profile.editAction}
+        </Button>
+      </Card>
       <Card className="space-y-4 border-volt/25 bg-gradient-to-br from-volt/[0.08] to-surface">
         <div className="flex items-start gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-volt/15 text-volt shadow-glow">
@@ -257,6 +307,24 @@ export function SettingsPage() {
           </div>
         ) : null}
       </Modal>
+      <ProfileSetupModal
+        open={profileOpen}
+        mode="edit"
+        initialAgeYears={preferences?.ageYears}
+        initialHeightCm={preferences?.heightCm}
+        initialWeightKg={latestWeight}
+        onClose={() => setProfileOpen(false)}
+        onSave={saveProfile}
+      />
+    </div>
+  );
+}
+
+function ProfileMiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="min-w-0 rounded-2xl bg-white/[0.04] p-3">
+      <p className="text-[0.68rem] font-semibold text-white/45">{label}</p>
+      <p className="mt-1 truncate text-lg font-extrabold text-white">{value}</p>
     </div>
   );
 }

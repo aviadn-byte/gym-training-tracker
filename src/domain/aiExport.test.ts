@@ -46,6 +46,9 @@ const workoutDay: WorkoutDay = {
 const preferences: AppPreferences = {
   id: 'prefs',
   disclaimerAcceptedAt: '2026-01-01T00:00:00.000Z',
+  profileCompletedAt: '2026-01-01T00:02:00.000Z',
+  ageYears: 35,
+  heightCm: 178,
   barWeightKg: 20,
   installPromptDismissedAt: null
 };

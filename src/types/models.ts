@@ -126,6 +126,9 @@ export interface BodyWeightEntry {
 export interface AppPreferences {
   id: 'prefs';
   disclaimerAcceptedAt: ISODateString | null;
+  profileCompletedAt: ISODateString | null;
+  ageYears: number | null;
+  heightCm: number | null;
   barWeightKg: number;
   installPromptDismissedAt: ISODateString | null;
 }
