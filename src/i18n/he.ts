@@ -67,7 +67,11 @@ export const he = {
     nameEn: 'שם באנגלית',
     primary: 'שריר ראשי',
     secondary: 'שריר משני',
-    equipment: 'ציוד'
+    equipment: 'ציוד',
+    filterMuscle: 'סינון שריר',
+    saveDetails: 'שמור פרטים',
+    addCustom: 'הוסף תרגיל מותאם',
+    builtIn: 'מובנה'
   },
   programs: {
     title: 'תוכניות',
@@ -86,7 +90,23 @@ export const he = {
     restTime: 'מנוחה מומלצת',
     ppl: 'Push / Pull / Legs',
     upperLower: 'Upper / Lower',
-    fullBody: 'Full Body'
+    fullBody: 'Full Body',
+    createFromTemplate: 'צור מתבנית',
+    createBlank: 'תוכנית ריקה',
+    programName: 'שם התוכנית',
+    daysPerWeek: 'ימים בשבוע',
+    activePrograms: 'תוכניות פעילות',
+    archivedPrograms: 'ארכיון',
+    noPrograms: 'אין עדיין תוכניות',
+    startDay: 'התחל יום',
+    editExercise: 'עריכת תרגיל',
+    repsRange: 'טווח חזרות',
+    restSeconds: 'מנוחה בשניות',
+    supersetGroup: 'קבוצת סופר־סט',
+    noSuperset: 'בלי סופר־סט',
+    loadFactor: 'מקדם עומס',
+    setFactor: 'מקדם סטים',
+    everyNWeeks: 'כל כמה שבועות'
   },
   workout: {
     title: 'אימון',
