@@ -112,6 +112,8 @@ export interface WorkoutSession {
   sessionRPE: number | null;
   status: WorkoutStatus;
   loggedSets: LoggedSet[];
+  addedExercises?: PlannedExercise[];
+  skippedExerciseIds?: string[];
 }
 
 export interface BodyWeightEntry {
