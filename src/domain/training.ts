@@ -109,7 +109,9 @@ export function derivePersonalRecords(sets: LoggedSet[]): PersonalRecord[] {
 }
 
 export function wouldSetBeatPr(set: LoggedSet, previousSets: LoggedSet[]) {
-  const currentRecords = derivePersonalRecords(previousSets.filter((item) => item.exerciseId === set.exerciseId));
+  const currentRecords = derivePersonalRecords(
+    previousSets.filter((item) => item.exerciseId === set.exerciseId)
+  );
   if (!isWorkingSet(set)) return false;
 
   return currentRecords.some((record) => {
@@ -176,10 +178,12 @@ export function suggestDoubleProgression({
   };
 }
 
-export function detectWeeklyLoadAlert(currentWeekVolume: number, trailingFourWeekVolumes: number[]) {
+export function detectWeeklyLoadAlert(
+  currentWeekVolume: number,
+  trailingFourWeekVolumes: number[]
+) {
   const usable = trailingFourWeekVolumes.filter((value) => value > 0);
   if (usable.length < 2) return false;
   const average = usable.reduce((sum, value) => sum + value, 0) / usable.length;
   return currentWeekVolume > average * 1.25;
 }
-

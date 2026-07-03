@@ -30,7 +30,11 @@ export function ExercisesPage() {
     });
   }, [exercises, muscleFilter, query]);
 
-  const saveExerciseDetails = async (exercise: Exercise, notes: string, weightIncrementKg: 1 | 2 | 2.5 | 5) => {
+  const saveExerciseDetails = async (
+    exercise: Exercise,
+    notes: string,
+    weightIncrementKg: 1 | 2 | 2.5 | 5
+  ) => {
     await db.exercises.update(exercise.id, { notes, weightIncrementKg, updatedAt: nowIso() });
     setEditing(null);
   };
@@ -110,7 +114,11 @@ export function ExercisesPage() {
       <div className="space-y-3">
         {filtered.map((exercise) => (
           <Card key={exercise.id} className="animate-slide-up">
-            <button type="button" className="w-full text-right" onClick={() => setEditing(exercise)}>
+            <button
+              type="button"
+              className="w-full text-right"
+              onClick={() => setEditing(exercise)}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-extrabold">{exercise.nameHe}</h3>
@@ -123,7 +131,9 @@ export function ExercisesPage() {
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/55">
-                <span>{exercise.primaryMuscles.map((muscle) => he.muscles[muscle]).join(' · ')}</span>
+                <span>
+                  {exercise.primaryMuscles.map((muscle) => he.muscles[muscle]).join(' · ')}
+                </span>
                 <span className="h-1 w-1 rounded-full bg-white/20" />
                 <span>{he.equipment[exercise.equipment]}</span>
                 <span className="h-1 w-1 rounded-full bg-white/20" />
@@ -138,8 +148,16 @@ export function ExercisesPage() {
           </Card>
         ))}
       </div>
-      <ExerciseDetailsModal exercise={editing} onClose={() => setEditing(null)} onSave={saveExerciseDetails} />
-      <AddExerciseModal open={isAdding} onClose={() => setIsAdding(false)} onSave={addCustomExercise} />
+      <ExerciseDetailsModal
+        exercise={editing}
+        onClose={() => setEditing(null)}
+        onSave={saveExerciseDetails}
+      />
+      <AddExerciseModal
+        open={isAdding}
+        onClose={() => setIsAdding(false)}
+        onSave={addCustomExercise}
+      />
     </div>
   );
 }
@@ -198,7 +216,12 @@ function ExerciseDetailsModal({ exercise, onClose, onSave }: ExerciseDetailsModa
 interface AddExerciseModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (draft: { nameHe: string; nameEn: string; primary: MuscleGroup; equipment: Equipment }) => void;
+  onSave: (draft: {
+    nameHe: string;
+    nameEn: string;
+    primary: MuscleGroup;
+    equipment: Equipment;
+  }) => void;
 }
 
 function AddExerciseModal({ open, onClose, onSave }: AddExerciseModalProps) {
@@ -215,7 +238,9 @@ function AddExerciseModal({ open, onClose, onSave }: AddExerciseModalProps) {
         <TextInput label={he.exercises.nameHe} value={nameHe} onChange={setNameHe} />
         <TextInput label={he.exercises.nameEn} value={nameEn} onChange={setNameEn} dir="ltr" />
         <label className="block">
-          <span className="mb-2 block text-xs font-semibold text-muted">{he.exercises.primary}</span>
+          <span className="mb-2 block text-xs font-semibold text-muted">
+            {he.exercises.primary}
+          </span>
           <select
             value={primary}
             onChange={(event) => setPrimary(event.target.value as MuscleGroup)}
@@ -229,7 +254,9 @@ function AddExerciseModal({ open, onClose, onSave }: AddExerciseModalProps) {
           </select>
         </label>
         <label className="block">
-          <span className="mb-2 block text-xs font-semibold text-muted">{he.exercises.equipment}</span>
+          <span className="mb-2 block text-xs font-semibold text-muted">
+            {he.exercises.equipment}
+          </span>
           <select
             value={equipment}
             onChange={(event) => setEquipment(event.target.value as Equipment)}
@@ -242,7 +269,11 @@ function AddExerciseModal({ open, onClose, onSave }: AddExerciseModalProps) {
             ))}
           </select>
         </label>
-        <Button className="w-full" disabled={!canSave} onClick={() => onSave({ nameHe, nameEn, primary, equipment })}>
+        <Button
+          className="w-full"
+          disabled={!canSave}
+          onClick={() => onSave({ nameHe, nameEn, primary, equipment })}
+        >
           {he.exercises.addCustom}
         </Button>
       </div>

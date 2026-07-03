@@ -99,4 +99,3 @@ describe('training domain', () => {
     expect(detectWeeklyLoadAlert(1300, [1000, 980, 1020, 1000])).toBe(true);
   });
 });
-

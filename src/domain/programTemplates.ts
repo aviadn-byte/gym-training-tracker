@@ -198,4 +198,3 @@ export function createEmptyProgram(name: string, goal: ProgramGoal, daysPerWeek:
   }));
   return { program, days };
 }
-

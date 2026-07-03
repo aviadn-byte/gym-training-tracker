@@ -32,4 +32,3 @@ export const equipmentTypes: Equipment[] = [
 ];
 
 export const weightIncrements = [1, 2, 2.5, 5] as const;
-

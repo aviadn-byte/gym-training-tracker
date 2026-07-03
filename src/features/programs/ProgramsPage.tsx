@@ -14,7 +14,13 @@ import {
   type TemplateId
 } from '../../domain/programTemplates';
 import { he } from '../../i18n/he';
-import type { Exercise, PlannedExercise, Program, ProgramGoal, WorkoutDay } from '../../types/models';
+import type {
+  Exercise,
+  PlannedExercise,
+  Program,
+  ProgramGoal,
+  WorkoutDay
+} from '../../types/models';
 
 const goalOptions: Array<{ value: ProgramGoal; label: string }> = [
   { value: 'strength', label: he.programs.strength },
@@ -48,7 +54,10 @@ export function ProgramsPage() {
   const daysByProgram = useMemo(() => {
     const map = new Map<string, WorkoutDay[]>();
     (days ?? []).forEach((day) => {
-      map.set(day.programId, [...(map.get(day.programId) ?? []), day].sort((a, b) => a.order - b.order));
+      map.set(
+        day.programId,
+        [...(map.get(day.programId) ?? []), day].sort((a, b) => a.order - b.order)
+      );
     });
     return map;
   }, [days]);
@@ -162,7 +171,11 @@ export function ProgramsPage() {
           <h2 className="text-3xl font-extrabold">{he.programs.title}</h2>
           <p className="text-sm text-muted">{he.programs.activePrograms}</p>
         </div>
-        <Button icon={<Plus size={20} strokeWidth={1.5} />} className="px-4" onClick={() => setCreateOpen(true)}>
+        <Button
+          icon={<Plus size={20} strokeWidth={1.5} />}
+          className="px-4"
+          onClick={() => setCreateOpen(true)}
+        >
           {he.common.add}
         </Button>
       </div>
@@ -195,12 +208,17 @@ export function ProgramsPage() {
           <h3 className="mb-3 text-lg font-extrabold">{he.programs.archivedPrograms}</h3>
           <div className="space-y-2">
             {archivedPrograms.map((program) => (
-              <div key={program.id} className="flex items-center justify-between rounded-2xl bg-white/[0.04] p-3">
+              <div
+                key={program.id}
+                className="flex items-center justify-between rounded-2xl bg-white/[0.04] p-3"
+              >
                 <span className="font-semibold text-white/70">{program.name}</span>
                 <Button
                   variant="secondary"
                   className="min-h-10 rounded-xl px-3"
-                  onClick={() => db.programs.update(program.id, { status: 'active', updatedAt: nowIso() })}
+                  onClick={() =>
+                    db.programs.update(program.id, { status: 'active', updatedAt: nowIso() })
+                  }
                 >
                   {he.common.resume}
                 </Button>
@@ -290,7 +308,10 @@ function ProgramCard({
 
       <div className="space-y-3">
         {days.map((day) => (
-          <section key={day.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.035] p-3">
+          <section
+            key={day.id}
+            className="rounded-2xl border border-white/[0.06] bg-white/[0.035] p-3"
+          >
             <div className="mb-3 flex items-center justify-between gap-2">
               <h4 className="text-lg font-extrabold">{day.name}</h4>
               <div className="flex gap-2">
@@ -335,8 +356,9 @@ function ProgramCard({
                       ) : null}
                     </div>
                     <p className="mt-2 text-xs text-white/55">
-                      {planned.sets} {he.common.sets} · {planned.targetRepsMin}-{planned.targetRepsMax}{' '}
-                      {he.common.reps} · {planned.restSeconds} {he.common.seconds}
+                      {planned.sets} {he.common.sets} · {planned.targetRepsMin}-
+                      {planned.targetRepsMax} {he.common.reps} · {planned.restSeconds}{' '}
+                      {he.common.seconds}
                     </p>
                   </button>
                 );
@@ -378,14 +400,21 @@ function CreateProgramModal({ open, onClose, onTemplate, onBlank }: CreateProgra
         <SegmentedControl value={goal} options={goalOptions} onChange={setGoal} />
         <div className="grid gap-2">
           {templateOptions.map((template) => (
-            <Button key={template.id} variant="secondary" className="w-full" onClick={() => onTemplate(template.id, goal)}>
+            <Button
+              key={template.id}
+              variant="secondary"
+              className="w-full"
+              onClick={() => onTemplate(template.id, goal)}
+            >
               {he.programs.createFromTemplate}: {template.label}
             </Button>
           ))}
         </div>
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3">
           <label className="block">
-            <span className="mb-2 block text-xs font-semibold text-muted">{he.programs.programName}</span>
+            <span className="mb-2 block text-xs font-semibold text-muted">
+              {he.programs.programName}
+            </span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -393,7 +422,9 @@ function CreateProgramModal({ open, onClose, onTemplate, onBlank }: CreateProgra
             />
           </label>
           <label className="mt-3 block">
-            <span className="mb-2 block text-xs font-semibold text-muted">{he.programs.daysPerWeek}</span>
+            <span className="mb-2 block text-xs font-semibold text-muted">
+              {he.programs.daysPerWeek}
+            </span>
             <input
               value={daysPerWeek}
               type="number"
@@ -420,7 +451,12 @@ interface AddPlannedExerciseModalProps {
   onSave: (day: WorkoutDay, exerciseId: string) => void;
 }
 
-function AddPlannedExerciseModal({ day, exercises, onClose, onSave }: AddPlannedExerciseModalProps) {
+function AddPlannedExerciseModal({
+  day,
+  exercises,
+  onClose,
+  onSave
+}: AddPlannedExerciseModalProps) {
   const [exerciseId, setExerciseId] = useState(exercises[0]?.id ?? '');
 
   return (
@@ -454,7 +490,12 @@ interface EditPlannedExerciseModalProps {
   onSave: (day: WorkoutDay, planned: PlannedExercise) => void;
 }
 
-function EditPlannedExerciseModal({ item, exerciseById, onClose, onSave }: EditPlannedExerciseModalProps) {
+function EditPlannedExerciseModal({
+  item,
+  exerciseById,
+  onClose,
+  onSave
+}: EditPlannedExerciseModalProps) {
   const [draft, setDraft] = useState<PlannedExercise | null>(null);
 
   useEffect(() => {
@@ -464,7 +505,11 @@ function EditPlannedExerciseModal({ item, exerciseById, onClose, onSave }: EditP
   const exercise = draft ? exerciseById.get(draft.exerciseId) : null;
 
   return (
-    <Modal open={Boolean(item && draft)} title={exercise?.nameHe ?? he.programs.editExercise} onClose={onClose}>
+    <Modal
+      open={Boolean(item && draft)}
+      title={exercise?.nameHe ?? he.programs.editExercise}
+      onClose={onClose}
+    >
       {item && draft ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -501,18 +546,27 @@ function EditPlannedExerciseModal({ item, exerciseById, onClose, onSave }: EditP
               onChange={(restSeconds) => setDraft({ ...draft, restSeconds })}
             />
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold text-muted">{he.programs.supersetGroup}</span>
+              <span className="mb-2 block text-xs font-semibold text-muted">
+                {he.programs.supersetGroup}
+              </span>
               <input
                 value={draft.supersetGroup ?? ''}
                 onChange={(event) =>
-                  setDraft({ ...draft, supersetGroup: event.target.value.trim().toUpperCase() || null })
+                  setDraft({
+                    ...draft,
+                    supersetGroup: event.target.value.trim().toUpperCase() || null
+                  })
                 }
                 placeholder={he.programs.noSuperset}
                 className="min-h-12 w-full rounded-2xl border border-white/[0.08] bg-[#111116] px-4 text-white outline-none"
               />
             </label>
           </div>
-          <Button className="w-full" icon={<Settings2 size={19} strokeWidth={1.5} />} onClick={() => onSave(item.day, draft)}>
+          <Button
+            className="w-full"
+            icon={<Settings2 size={19} strokeWidth={1.5} />}
+            onClick={() => onSave(item.day, draft)}
+          >
             {he.common.save}
           </Button>
         </div>

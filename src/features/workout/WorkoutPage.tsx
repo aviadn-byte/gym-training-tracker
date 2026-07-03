@@ -1,4 +1,13 @@
-import { Check, ChevronLeft, ChevronRight, Dumbbell, Plus, Save, Shuffle, Trash2 } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Plus,
+  Save,
+  Shuffle,
+  Trash2
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Button } from '../../components/ui/Button';
@@ -12,10 +21,20 @@ import { PlateCalculator } from '../../components/PlateCalculator';
 import { RestTimer } from '../../components/RestTimer';
 import { db, createId, nowIso } from '../../db/schema';
 import { goalDefaults } from '../../domain/programTemplates';
-import { calculateTotalVolume, suggestDoubleProgression, wouldSetBeatPr } from '../../domain/training';
+import {
+  calculateTotalVolume,
+  suggestDoubleProgression,
+  wouldSetBeatPr
+} from '../../domain/training';
 import { he } from '../../i18n/he';
 import { useToastStore } from '../../stores/toastStore';
-import type { Exercise, LoggedSet, PlannedExercise, SetType, WorkoutSession } from '../../types/models';
+import type {
+  Exercise,
+  LoggedSet,
+  PlannedExercise,
+  SetType,
+  WorkoutSession
+} from '../../types/models';
 
 type SetDraft = {
   weightKg: number;
@@ -50,9 +69,16 @@ export function WorkoutPage() {
   const [editingSet, setEditingSet] = useState<LoggedSet | null>(null);
   const [sessionRPE, setSessionRPE] = useState(8);
   const [confetti, setConfetti] = useState(false);
-  const [summary, setSummary] = useState<{ volume: number; durationMinutes: number; prs: number } | null>(null);
+  const [summary, setSummary] = useState<{
+    volume: number;
+    durationMinutes: number;
+    prs: number;
+  } | null>(null);
 
-  const session = useLiveQuery(() => db.workoutSessions.where('status').equals('active').first(), []);
+  const session = useLiveQuery(
+    () => db.workoutSessions.where('status').equals('active').first(),
+    []
+  );
   const day = useLiveQuery(
     () => (session?.workoutDayId ? db.workoutDays.get(session.workoutDayId) : undefined),
     [session?.workoutDayId]
@@ -74,7 +100,9 @@ export function WorkoutPage() {
   );
 
   const plan = useMemo(() => {
-    const planned = [...(day?.exercises ?? []), ...(session?.addedExercises ?? [])].sort((a, b) => a.order - b.order);
+    const planned = [...(day?.exercises ?? []), ...(session?.addedExercises ?? [])].sort(
+      (a, b) => a.order - b.order
+    );
     const skipped = new Set(session?.skippedExerciseIds ?? []);
     return planned.filter((item) => !skipped.has(item.id));
   }, [day?.exercises, session?.addedExercises, session?.skippedExerciseIds]);
@@ -82,7 +110,10 @@ export function WorkoutPage() {
   const planned = plan[Math.min(exerciseIndex, Math.max(0, plan.length - 1))];
   const exercise = planned ? exerciseById.get(planned.exerciseId) : null;
   const loggedForExercise = useMemo(
-    () => (session?.loggedSets ?? []).filter((set) => set.plannedExerciseId === planned?.id || set.exerciseId === planned?.exerciseId),
+    () =>
+      (session?.loggedSets ?? []).filter(
+        (set) => set.plannedExerciseId === planned?.id || set.exerciseId === planned?.exerciseId
+      ),
     [planned?.exerciseId, planned?.id, session?.loggedSets]
   );
 
@@ -146,7 +177,10 @@ export function WorkoutPage() {
     await updateSession({ ...session, loggedSets: [...session.loggedSets, newSet] });
     setRestStartedAt(Date.now());
     setRestTotalSeconds(planned.restSeconds);
-    pushToast({ tone: isPr ? 'success' : 'default', title: isPr ? he.workout.newPr : he.workout.setSaved });
+    pushToast({
+      tone: isPr ? 'success' : 'default',
+      title: isPr ? he.workout.newPr : he.workout.setSaved
+    });
     if (isPr) {
       setConfetti(true);
       window.setTimeout(() => setConfetti(false), 1100);
@@ -155,7 +189,10 @@ export function WorkoutPage() {
 
   const deleteSet = async (setId: string) => {
     if (!session) return;
-    await updateSession({ ...session, loggedSets: session.loggedSets.filter((set) => set.id !== setId) });
+    await updateSession({
+      ...session,
+      loggedSets: session.loggedSets.filter((set) => set.id !== setId)
+    });
   };
 
   const saveEditedSet = async (editedSet: LoggedSet) => {
@@ -309,8 +346,16 @@ export function WorkoutPage() {
       <Card>
         <div className="grid grid-cols-3 gap-3">
           <Stat label={he.common.sets} value={`${loggedForExercise.length}/${planned.sets}`} />
-          <Stat label={he.common.reps} value={`${planned.targetRepsMin}-${planned.targetRepsMax}`} accent />
-          <Stat label={he.common.rest} value={Math.round(planned.restSeconds / 60)} suffix={he.common.minutes} />
+          <Stat
+            label={he.common.reps}
+            value={`${planned.targetRepsMin}-${planned.targetRepsMax}`}
+            accent
+          />
+          <Stat
+            label={he.common.rest}
+            value={Math.round(planned.restSeconds / 60)}
+            suffix={he.common.minutes}
+          />
         </div>
         {suggestion ? (
           <p className="mt-4 rounded-2xl border border-volt/20 bg-volt/10 p-3 text-sm font-semibold text-volt">
@@ -395,7 +440,8 @@ export function WorkoutPage() {
                 {set.weightKg} × {set.reps}
               </p>
               <p className="text-xs text-muted">
-                {he.workout[set.type]} · RPE {set.rpe ?? '-'} · {he.workout.pain} {set.painScore ?? 0}
+                {he.workout[set.type]} · RPE {set.rpe ?? '-'} · {he.workout.pain}{' '}
+                {set.painScore ?? 0}
               </p>
             </div>
             <button
@@ -414,10 +460,18 @@ export function WorkoutPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <Button variant="secondary" icon={<Plus size={18} strokeWidth={1.5} />} onClick={() => setAddExerciseOpen(true)}>
+        <Button
+          variant="secondary"
+          icon={<Plus size={18} strokeWidth={1.5} />}
+          onClick={() => setAddExerciseOpen(true)}
+        >
           {he.common.add}
         </Button>
-        <Button variant="secondary" icon={<Shuffle size={18} strokeWidth={1.5} />} onClick={skipExercise}>
+        <Button
+          variant="secondary"
+          icon={<Shuffle size={18} strokeWidth={1.5} />}
+          onClick={skipExercise}
+        >
           {he.workout.skipExercise}
         </Button>
         <Button variant="danger" onClick={() => setFinishOpen(true)}>
@@ -431,7 +485,11 @@ export function WorkoutPage() {
         onSkip={() => setRestStartedAt(null)}
         onAddSeconds={(seconds) => setRestTotalSeconds((current) => current + seconds)}
       />
-      <Modal open={plateOpen} title={he.workout.plateCalculator} onClose={() => setPlateOpen(false)}>
+      <Modal
+        open={plateOpen}
+        title={he.workout.plateCalculator}
+        onClose={() => setPlateOpen(false)}
+      >
         <PlateCalculator
           targetWeightKg={draft.weightKg}
           barWeightKg={preferences?.barWeightKg ?? 20}
@@ -595,8 +653,17 @@ function WorkoutSummary({
     <div className="space-y-4">
       <h2 className="text-3xl font-extrabold">{he.workout.summary}</h2>
       <Card className="grid grid-cols-3 gap-3">
-        <Stat label={he.workout.totalVolume} value={summary.volume.toLocaleString('he-IL')} suffix={he.common.kg} accent />
-        <Stat label={he.workout.duration} value={summary.durationMinutes} suffix={he.common.minutes} />
+        <Stat
+          label={he.workout.totalVolume}
+          value={summary.volume.toLocaleString('he-IL')}
+          suffix={he.common.kg}
+          accent
+        />
+        <Stat
+          label={he.workout.duration}
+          value={summary.durationMinutes}
+          suffix={he.common.minutes}
+        />
         <Stat label={he.workout.prs} value={summary.prs} accent={summary.prs > 0} />
       </Card>
       <Button className="w-full" onClick={onClose}>
