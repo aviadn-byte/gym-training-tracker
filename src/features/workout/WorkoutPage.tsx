@@ -1,4 +1,5 @@
 import {
+  Ban,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ import {
   suggestDoubleProgression,
   wouldSetBeatPr
 } from '../../domain/training';
+import { adaptPlanToTargetDuration, findSmartExerciseSwap } from '../../domain/workoutPlanning';
 import { he } from '../../i18n/he';
 import { useToastStore } from '../../stores/toastStore';
 import type {
@@ -104,13 +106,32 @@ export function WorkoutPage() {
     [exercises]
   );
 
-  const plan = useMemo(() => {
-    const planned = [...(day?.exercises ?? []), ...(session?.addedExercises ?? [])].sort(
-      (a, b) => a.order - b.order
-    );
+  const rawPlan = useMemo(() => {
+    const swaps = session?.exerciseSwaps ?? {};
+    const planned = [...(day?.exercises ?? []), ...(session?.addedExercises ?? [])]
+      .sort((a, b) => a.order - b.order)
+      .map((item) => ({
+        ...item,
+        exerciseId: swaps[item.id] ?? item.exerciseId
+      }));
     const skipped = new Set(session?.skippedExerciseIds ?? []);
     return planned.filter((item) => !skipped.has(item.id));
-  }, [day?.exercises, session?.addedExercises, session?.skippedExerciseIds]);
+  }, [
+    day?.exercises,
+    session?.addedExercises,
+    session?.exerciseSwaps,
+    session?.skippedExerciseIds
+  ]);
+
+  const targetDurationMinutes =
+    day?.targetDurationMinutes ??
+    (program ? goalDefaults(program.goal).targetDurationMinutes : null);
+  const timePlan = useMemo(
+    () => adaptPlanToTargetDuration(rawPlan, targetDurationMinutes),
+    [rawPlan, targetDurationMinutes]
+  );
+
+  const plan = timePlan.exercises;
 
   const planned = plan[Math.min(exerciseIndex, Math.max(0, plan.length - 1))];
   const exercise = planned ? exerciseById.get(planned.exerciseId) : null;
@@ -216,6 +237,39 @@ export function WorkoutPage() {
       skippedExerciseIds: [...(session.skippedExerciseIds ?? []), planned.id]
     });
     setExerciseIndex((index) => Math.min(index, Math.max(0, plan.length - 2)));
+  };
+
+  const smartSwapExercise = async () => {
+    if (!session || !planned || !exercise || !exercises) return;
+    if (loggedForExercise.length > 0) {
+      pushToast({ tone: 'default', title: he.workout.smartSwapLocked });
+      return;
+    }
+
+    const replacement = findSmartExerciseSwap(
+      planned.exerciseId,
+      exercises,
+      new Set(plan.map((item) => item.exerciseId))
+    );
+
+    if (!replacement) {
+      pushToast({ tone: 'default', title: he.workout.noSmartSwap });
+      return;
+    }
+
+    await updateSession({
+      ...session,
+      exerciseSwaps: {
+        ...(session.exerciseSwaps ?? {}),
+        [planned.id]: replacement.id
+      },
+      notes: `${session.notes ? `${session.notes}\n` : ''}${he.workout.smartSwapNote}: ${exercise.nameHe} -> ${replacement.nameHe}`
+    });
+    pushToast({
+      tone: 'success',
+      title: he.workout.smartSwapDone,
+      body: replacement.nameHe
+    });
   };
 
   const addExercise = async (exerciseId: string) => {
@@ -370,6 +424,22 @@ export function WorkoutPage() {
             suffix={he.common.minutes}
           />
         </div>
+        {targetDurationMinutes ? (
+          <p className="mt-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3 text-sm font-semibold text-white/68">
+            {he.workout.timeAdjusted}: {timePlan.estimatedMinutes}/{targetDurationMinutes}{' '}
+            {he.common.minutes}
+            {timePlan.isAdapted
+              ? ` · ${he.workout.removedSets.replace('{count}', String(timePlan.removedSets))}`
+              : ''}
+          </p>
+        ) : null}
+        {planned.originalSets !== planned.sets ? (
+          <p className="mt-3 rounded-2xl border border-volt/20 bg-volt/10 p-3 text-sm font-semibold text-volt">
+            {he.workout.adjustedExerciseSets
+              .replace('{current}', String(planned.sets))
+              .replace('{original}', String(planned.originalSets))}
+          </p>
+        ) : null}
         {suggestion ? (
           <p className="mt-4 rounded-2xl border border-volt/20 bg-volt/10 p-3 text-sm font-semibold text-volt">
             {he.workout.suggested}: {suggestion.message}
@@ -472,7 +542,7 @@ export function WorkoutPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Button
           variant="secondary"
           icon={<Plus size={18} strokeWidth={1.5} />}
@@ -483,6 +553,13 @@ export function WorkoutPage() {
         <Button
           variant="secondary"
           icon={<Shuffle size={18} strokeWidth={1.5} />}
+          onClick={smartSwapExercise}
+        >
+          {he.workout.smartSwap}
+        </Button>
+        <Button
+          variant="secondary"
+          icon={<Ban size={18} strokeWidth={1.5} />}
           onClick={skipExercise}
         >
           {he.workout.skipExercise}

@@ -139,6 +139,13 @@ export function ProgramsPage() {
     setEditingExercise(null);
   };
 
+  const updateDayDuration = async (day: WorkoutDay, targetDurationMinutes: number) => {
+    await db.workoutDays.update(day.id, {
+      targetDurationMinutes,
+      updatedAt: nowIso()
+    });
+  };
+
   const startDay = async (program: Program, day: WorkoutDay) => {
     const existing = await db.workoutSessions.where('status').equals('active').first();
     if (existing) {
@@ -199,6 +206,7 @@ export function ProgramsPage() {
           onDuplicate={duplicateProgram}
           onAddExercise={setAddExerciseDay}
           onEditExercise={(day, planned) => setEditingExercise({ day, planned })}
+          onUpdateDayDuration={updateDayDuration}
           onStartDay={startDay}
         />
       ))}
@@ -258,6 +266,7 @@ interface ProgramCardProps {
   onDuplicate: (program: Program) => void;
   onAddExercise: (day: WorkoutDay) => void;
   onEditExercise: (day: WorkoutDay, planned: PlannedExercise) => void;
+  onUpdateDayDuration: (day: WorkoutDay, targetDurationMinutes: number) => void;
   onStartDay: (program: Program, day: WorkoutDay) => void;
 }
 
@@ -269,8 +278,11 @@ function ProgramCard({
   onDuplicate,
   onAddExercise,
   onEditExercise,
+  onUpdateDayDuration,
   onStartDay
 }: ProgramCardProps) {
+  const defaultDuration = goalDefaults(program.goal).targetDurationMinutes;
+
   return (
     <Card className="space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -331,6 +343,22 @@ function ProgramCard({
                   {he.common.start}
                 </Button>
               </div>
+            </div>
+            <div className="mb-3 rounded-2xl border border-white/[0.06] bg-black/16 p-3">
+              <NumberInput
+                label={he.programs.targetDuration}
+                value={day.targetDurationMinutes ?? defaultDuration}
+                min={20}
+                max={180}
+                step={5}
+                suffix={he.common.minutes}
+                onChange={(targetDurationMinutes) =>
+                  onUpdateDayDuration(day, targetDurationMinutes)
+                }
+              />
+              <p className="mt-2 text-xs leading-5 text-white/50">
+                {he.programs.targetDurationHint}
+              </p>
             </div>
             <div className="space-y-2">
               {day.exercises.map((planned) => {
@@ -581,23 +609,35 @@ interface NumberInputProps {
   min?: number;
   max?: number;
   step?: number;
+  suffix?: string;
   onChange: (value: number) => void;
 }
 
-function NumberInput({ label, value, min = 0, max = 999, step = 1, onChange }: NumberInputProps) {
+function NumberInput({
+  label,
+  value,
+  min = 0,
+  max = 999,
+  step = 1,
+  suffix,
+  onChange
+}: NumberInputProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-semibold text-muted">{label}</span>
-      <input
-        value={value}
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="ltr-num min-h-12 w-full rounded-2xl border border-white/[0.08] bg-[#111116] px-4 text-white outline-none"
-        dir="ltr"
-      />
+      <div className="flex min-h-12 items-center rounded-2xl border border-white/[0.08] bg-[#111116] px-4">
+        <input
+          value={value}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="ltr-num min-h-11 min-w-0 flex-1 bg-transparent text-white outline-none"
+          dir="ltr"
+        />
+        {suffix ? <span className="text-sm font-semibold text-white/50">{suffix}</span> : null}
+      </div>
     </label>
   );
 }

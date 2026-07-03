@@ -82,6 +82,7 @@ export interface WorkoutDay {
   programId: string;
   name: string;
   order: number;
+  targetDurationMinutes?: number | null;
   exercises: PlannedExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -114,6 +115,7 @@ export interface WorkoutSession {
   loggedSets: LoggedSet[];
   addedExercises?: PlannedExercise[];
   skippedExerciseIds?: string[];
+  exerciseSwaps?: Record<string, string>;
 }
 
 export interface BodyWeightEntry {

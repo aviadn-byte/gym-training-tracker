@@ -152,6 +152,8 @@ export const he = {
     superset: 'סופר־סט',
     target: 'יעד',
     restTime: 'מנוחה מומלצת',
+    targetDuration: 'זמן אימון מתוכנן',
+    targetDurationHint: 'האימון הפעיל יתאים את מספר הסטים כדי להתקרב לזמן הזה.',
     ppl: 'Push / Pull / Legs',
     upperLower: 'Upper / Lower',
     fullBody: 'Full Body',
@@ -198,7 +200,15 @@ export const he = {
     drop: 'דרופ',
     amrap: 'AMRAP',
     swapExercise: 'החלף תרגיל',
-    skipExercise: 'דלג תרגיל'
+    skipExercise: 'דלג תרגיל',
+    timeAdjusted: 'מותאם לזמן האימון',
+    removedSets: 'קוצצו {count} סטים',
+    adjustedExerciseSets: 'התרגיל הותאם ל-{current} מתוך {original} סטים',
+    smartSwap: 'החלפה חכמה',
+    smartSwapDone: 'הוחלף לתרגיל דומה',
+    smartSwapLocked: 'אפשר להחליף רק לפני שנשמר סט בתרגיל הזה',
+    noSmartSwap: 'לא נמצא תרגיל חלופי מתאים',
+    smartSwapNote: 'החלפה חכמה'
   },
   progress: {
     title: 'התקדמות',

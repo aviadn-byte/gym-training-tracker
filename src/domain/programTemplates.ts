@@ -16,12 +16,33 @@ export type TemplateId = 'ppl' | 'upperLower' | 'fullBody';
 
 export const goalDefaults = (goal: ProgramGoal) => {
   if (goal === 'strength') {
-    return { targetRepsMin: 3, targetRepsMax: 6, restSeconds: 240, targetRpe: 8, sets: 4 };
+    return {
+      targetRepsMin: 3,
+      targetRepsMax: 6,
+      restSeconds: 240,
+      targetRpe: 8,
+      sets: 4,
+      targetDurationMinutes: 75
+    };
   }
   if (goal === 'hypertrophy') {
-    return { targetRepsMin: 6, targetRepsMax: 15, restSeconds: 120, targetRpe: 8, sets: 3 };
+    return {
+      targetRepsMin: 6,
+      targetRepsMax: 15,
+      restSeconds: 120,
+      targetRpe: 8,
+      sets: 3,
+      targetDurationMinutes: 60
+    };
   }
-  return { targetRepsMin: 5, targetRepsMax: 10, restSeconds: 180, targetRpe: 8, sets: 3 };
+  return {
+    targetRepsMin: 5,
+    targetRepsMax: 10,
+    restSeconds: 180,
+    targetRpe: 8,
+    sets: 3,
+    targetDurationMinutes: 60
+  };
 };
 
 const templates: Record<TemplateId, TemplateDay[]> = {
@@ -156,6 +177,7 @@ export function createProgramFromTemplate(templateId: TemplateId, goal: ProgramG
     programId,
     name: day.name,
     order: dayIndex,
+    targetDurationMinutes: defaults.targetDurationMinutes,
     createdAt,
     updatedAt: createdAt,
     exercises: day.exercises.map<PlannedExercise>((exercise, exerciseIndex) => ({
@@ -192,6 +214,7 @@ export function createEmptyProgram(name: string, goal: ProgramGoal, daysPerWeek:
     programId,
     name: `יום ${index + 1}`,
     order: index,
+    targetDurationMinutes: goalDefaults(goal).targetDurationMinutes,
     exercises: [],
     createdAt,
     updatedAt: createdAt
